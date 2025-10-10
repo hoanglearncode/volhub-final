@@ -2,9 +2,91 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/logo.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Volhub - Tuyển TNV các sự kiện</title>
+
+    <!-- Title (<= 60 ký tự tốt nhất) -->
+    <title>Volhub — Tuyển tình nguyện viên cho sự kiện | Đăng ký nhanh</title>
+
+    <!-- Meta description (<= 155-160 chars) -->
+    <meta name="description" content="Volhub — Nền tảng tuyển tình nguyện viên cho các sự kiện: âm nhạc, thể thao, hội chợ. Tìm, đăng ký và quản lý TNV dễ dàng. Tham gia ngay!" />
+
+    <!-- Keywords (tùy chọn; ít dùng nhưng vẫn để) -->
+    <meta name="keywords" content="tuyển tình nguyện viên, tình nguyện, TNV sự kiện, đăng ký tình nguyện, Volhub" />
+
+    <!-- Canonical -->
+    <link rel="canonical" href="https://www.volhub.example/" />
+
+    <!-- Robots -->
+    <meta name="robots" content="index, follow" />
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Volhub — Tuyển tình nguyện viên cho sự kiện" />
+    <meta property="og:description" content="Volhub — Nền tảng tuyển TNV cho sự kiện âm nhạc, thể thao, hội chợ. Đăng ký nhanh, quản lý dễ dàng." />
+    <meta property="og:url" content="https://www.volhub.example/" />
+    <meta property="og:site_name" content="Volhub" />
+    <meta property="og:locale" content="vi_VN" />
+    <meta property="og:image" content="https://www.volhub.example/assets/og-volhub.jpg" />
+    <meta property="og:image:alt" content="Volhub - Tuyển tình nguyện viên cho sự kiện" />
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:site" content="@Volhub" />
+    <meta name="twitter:title" content="Volhub — Tuyển tình nguyện viên cho sự kiện" />
+    <meta name="twitter:description" content="Đăng ký TNV cho các sự kiện âm nhạc, thể thao và hội chợ ngay trên Volhub." />
+    <meta name="twitter:image" content="https://www.volhub.example/assets/og-volhub.jpg" />
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="/logo.svg" />
+
+    <!-- Structured data (Organization + WebSite + Example Event) -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "Organization",
+          "@id": "https://www.volhub.example/#org",
+          "name": "Volhub",
+          "url": "https://www.volhub.example/",
+          "logo": "https://www.volhub.example/logo.svg",
+          "sameAs": [
+            "https://www.facebook.com/volhub",
+            "https://twitter.com/Volhub"
+          ]
+        },
+        {
+          "@type": "WebSite",
+          "@id": "https://www.volhub.example/#website",
+          "url": "https://www.volhub.example/",
+          "name": "Volhub",
+          "publisher": { "@id": "https://www.volhub.example/#org" },
+          "potentialAction": {
+            "@type": "SearchAction",
+            "target": "https://www.volhub.example/search?q={search_term_string}",
+            "query-input": "required name=search_term_string"
+          }
+        },
+        {
+          "@type": "Event",
+          "name": "Hội chợ Văn hóa - Tuyển TNV",
+          "startDate": "2025-11-15T08:00:00+07:00",
+          "endDate": "2025-11-15T18:00:00+07:00",
+          "eventStatus": "https://schema.org/EventScheduled",
+          "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+          "location": {
+            "@type": "Place",
+            "name": "Công viên Trung tâm",
+            "address": "Hà Nội, Việt Nam"
+          },
+          "image": [
+            "https://www.volhub.example/assets/event-1.jpg"
+          ],
+          "description": "Tuyển tình nguyện viên cho Hội chợ Văn hóa — hỗ trợ hậu cần, hướng dẫn khách, chăm sóc khu vực."
+        }
+      ]
+    }
+    </script>
   </head>
   <body>
     <div id="root"></div>
