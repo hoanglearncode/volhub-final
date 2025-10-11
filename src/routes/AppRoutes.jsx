@@ -99,6 +99,8 @@ import PostBoxPage from "../page/btc/PostPage";
 import HistoryPage from "../page/btc/HistoryPage";
 import Account from "../page/btc/Account";
 import SettingsPage from "../page/btc/SettingsPage";
+import TermsPage from "../page/common/Terms.jsx";
+import PrivacyPolicyPage from "../page/common/PrivacyPolicyPage.jsx";
 
 
 
@@ -147,6 +149,8 @@ export const routes = [
                             { path: 'connect-inbox', element: <ProtectedRoute allowedRoles={["ROLE_VOLUNTEER"]}><ConnectInbox /></ProtectedRoute>},
                             { path: '/services', element: <VolunteerRecruitmentService />}, 
                             { path: '/community/:slug', element: <BlogPostDetail />}, 
+                            { path: '/terms', element: <TermsPage />},
+                            { path: '/privacy-policy', element: <PrivacyPolicyPage />},
                             { path: '*', element: <NotFoundPage />},
                         ]
                     }

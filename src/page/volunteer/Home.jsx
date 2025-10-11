@@ -1,4 +1,3 @@
-// Dashboard.jsx
 import React, { useState, useRef,useEffect, use } from "react";
 import { Link } from "react-router-dom";
 
@@ -11,19 +10,38 @@ import NewsUpdatesWidget from "../../components/user/home/NewsUpdatesWidget";
 import CommunityFeedWidget from "../../components/user/home/CommunityFeedWidget";
 import FeaturedEventsCarousel from "../../components/user/home/FeaturedEventsCarousel";
 import { useAuth } from "../../context/AuthContext";
+import axios from "axios";
 
 
 export default function Dashboard() {
-  const {user} = useAuth();
-  const [mockSuccessStories, setMockSuccessStories] = useState([]);
+  const {user, token} = useAuth();
+  const [profile, setProfile] = useState(null);
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const res = await axios.get(`${import.meta.env.VITE_API}/api/users/my-info`, {
+          headers: {Authorization: `Bearer ${token}`}
+        });
+        console.log(res)
+      } catch (error) {
+        
+      }
+    }
+  }, []);
 
-  useEffect(() => {}, []);
-
+  console.log(user)
 
   return (
     <div className="min-h-screen bg-gray-50 md:p-6 py-6 md:py-0">
       <div className="mx-auto space-y-6">
-        {/* Top row: featured + news */}
+        {!profile && (
+          <aside role="status" aria-live="polite"
+            class="p-2.5 rounded-lg bg-yellow-100 text-slate-900 text-sm">
+            <strong class="inline-block mr-2 font-semibold">Mẹo:</strong>
+            <span>Hãy cập nhật thông tin <Link to={'/profile'} className="hover:underline text-yellow-400 font-semibold">profile</Link>  để bắt đầu hành trình</span>
+          </aside>
+
+        )}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 flex flex-col min-h-[40vh]"> 
             <FeaturedEventsCarousel />
@@ -45,29 +63,8 @@ export default function Dashboard() {
 
         {/* Fourth row: community feed (wide) */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2">
-            <CommunityFeedWidget />
-          </div>
-          <div className="space-y-6">
-            <BlogPostsWidget />
-            <FAQsWidget />
-          </div>
-        </div>
-
-        {/* Bottom row: success stories */}
-        <div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {mockSuccessStories.map((s, idx) => (
-              <div key={idx} className="bg-white rounded-2xl shadow p-4 border border-gray-100 flex gap-3">
-                <img src={s.image} alt={s.title} className="w-28 h-20 object-cover rounded-lg" />
-                <div>
-                  <Link to={`/events/${s?.slug}`} className="font-semibold text-sm">{s.title}</Link>
-                  <p className="text-xs text-gray-500 line-clamp-2 my-1">{s.description}</p>
-                  <div className="text-xs text-gray-400">{s.impact} • {s.volunteers} • {s.duration}</div>
-                </div>
-              </div>
-            ))}
-          </div>
+          <BlogPostsWidget />
+          <FAQsWidget />
         </div>
       </div>
     </div>

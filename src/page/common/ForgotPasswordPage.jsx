@@ -26,16 +26,17 @@ export default function ForgotPasswordPage() {
     setLoading(true);
     try {
       const res = await axios.post(`${import.meta.env.VITE_API}/api/users/forget/${email}`);
-
       if (res.data?.code === 0) {
         setTimeout(() => {
           toast.success("Thông tin lấy lại mật khẩu đã được gửi về gmail của bạn!");
-        }, 2000);  
-        navigate('/auth/reset');
-      }
-
+        }, 500);  
+        navigate(`/auth/reset?token=${email}`);
+      } 
     } catch (err) {
-      setError(err.message || "Không thể gửi yêu cầu, thử lại sau.");
+      if ( err.response.data?.code === 1001 ) {
+        setError("Thông tin email không chính xác!");
+        toast.error("Thông tin email không chính xác!");  
+      }
     } finally {
       setLoading(false);
     }

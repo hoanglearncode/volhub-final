@@ -1,71 +1,75 @@
 "use client";
-import { Eye } from "lucide-react";
+import { Eye, EyeOff } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { useSearchParams, useNavigate, Link } from "react-router-dom";
+import { toast } from "react-toastify";
+import parseJwtNoLib from "../../utils/tokenParser";
+import { useAuth } from "../../context/AuthContext";
 
 export default function ResetPasswordPage() {
   const [searchParams] = useSearchParams();
+  const { loginWithToken} = useAuth();
   const navigate = useNavigate();
-  const token = searchParams.get("token") || ""; // backend gửi link: /reset-password?token=...
-
+  const token = searchParams.get("token");
+  const [appPassword, setAppPassword] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
-  const [visible, setVisible] = useState(false);
+  const [visibleAppPassword, setVisibleAppPassword] = useState(false);
+  const [visiblePassword, setVisiblePassword] = useState(false);
+  const [visibleConfirm, setVisibleConfirm] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
 
-  useEffect(() => {
-    // optional: redirect if no token
-    if (!token) {
-      setError("Liên kết đặt lại mật khẩu không hợp lệ hoặc đã hết hạn.");
-    }
-  }, [token]);
+  
 
   const validatePassword = (pw) => {
-    if (pw.length < 8) return "Mật khẩu phải có ít nhất 8 ký tự.";
+    if (!pw || pw.length < 8) return "Mật khẩu phải có ít nhất 8 ký tự.";
     if (!/[0-9]/.test(pw)) return "Mật khẩu nên chứa ít nhất 1 chữ số.";
-    // thêm rule nếu muốn: uppercase, symbol, etc.
+    if (!/[A-Z]/.test(pw)) return "Mật khẩu nên chứa ít nhất 1 chữ cái in hoa.";
+    if (!/[!@#$%^&*()_\-+=[\]{};':\"\\|,.<>/?`~]/.test(pw)) return "Mật khẩu nên chứa ít nhất 1 ký tự đặc biệt.";
     return null;
   };
 
   const onSubmit = async (e) => {
     e.preventDefault();
     setError(null);
-    setSuccess(null);
-
-    if (!token) {
-      setError("Thiếu token. Vui lòng kiểm tra email hướng dẫn.");
+    const val = validatePassword(password.trim()) 
+    if(val){
+      toast.error("Mật khẩu không đúng định dạng!");
+      setError(val);
+      return;
+    } 
+    if (password.trim() !== confirm.trim()) {
+      toast.error("Mật khẩu - Xác nhận mật khẩu không khớp!");
       return;
     }
-
-    const pwErr = validatePassword(password);
-    if (pwErr) {
-      setError(pwErr);
-      return;
-    }
-    if (password !== confirm) {
-      setError("Mật khẩu và xác nhận mật khẩu không khớp.");
-      return;
-    }
-
     setLoading(true);
     try {
-      const res = await fetch("/api/auth/reset-password", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token, password }),
+      const res = await axios.post(`${import.meta.env.VITE_API}/api/users/change/forget-password`, {
+        email: token,
+        password: password,
+        appPassword: appPassword
       });
-
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        throw new Error(data?.message || "Đặt lại mật khẩu thất bại.");
-      }
-
-      setSuccess("Đặt lại mật khẩu thành công. Bạn sẽ được chuyển đến trang đăng nhập...");
-      setTimeout(() => navigate("/login"), 1500);
+      if (res.data?.code === 0 && res.data?.result) {
+        const res = await axios.post(`${import.meta.env.VITE_API}/auth/token`, {
+          email: token.toLowerCase(),
+          password: password,
+        });
+        if (res.data.result?.authenticated && res.data.result.token) {
+          loginWithToken(res.data.result.token);
+          const user = parseJwtNoLib(res.data.result.token);
+          if (user?.scope === "ROLE_ORGANIZER") navigate("/btc");
+          else navigate("/");
+        } else {
+          navigate("/login");
+        }
+      } 
     } catch (err) {
-      setError(err.message || "Có lỗi xảy ra, vui lòng thử lại.");
+      if ( err.response.data?.code === 1001 ) {
+        setError("Thông tin email không chính xác!");
+        toast.error("Thông tin email không chính xác!");  
+      }
     } finally {
       setLoading(false);
     }
@@ -73,20 +77,20 @@ export default function ResetPasswordPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4 py-12">
-      <div className="w-full max-w-md bg-white rounded-2xl shadow-md p-6">
+      <div className="w-full max-w-md bg-white rounded-2xl shadow-md p-6 space-y-5">
         <h1 className="text-2xl font-bold text-slate-900 mb-2">Đặt lại mật khẩu</h1>
         <p className="text-sm text-slate-600 mb-6">
           Nhập mật khẩu mới. Mật khẩu nên có ít nhất 8 ký tự và chứa chữ số.
         </p>
 
-        <form onSubmit={onSubmit} className="space-y-4" aria-live="polite">
+        <form onSubmit={onSubmit} className="space-y-6" aria-live="polite">
           <div>
             <label className="block text-sm font-medium text-slate-700">Mật khẩu được cấp</label>
             <div className="mt-2 relative">
               <input
-                type={visible ? "text" : "password"}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                type={visibleAppPassword ? "text" : "password"}
+                value={appPassword}
+                onChange={(e) => setAppPassword(e.target.value)}
                 required
                 minLength={8}
                 className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-blue-200 outline-none"
@@ -94,15 +98,23 @@ export default function ResetPasswordPage() {
                 aria-required
                 aria-describedby="pw-hint"
               />
-          
+              <button
+                type="button"
+                onClick={() => setVisibleAppPassword((v) => !v)}
+                aria-pressed={visibleConfirm}
+                aria-label={visibleConfirm ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
+                className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-2 rounded p-1 text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-200">
+                <span className="sr-only">{visibleConfirm ? "Ẩn mật khẩu" : "Hiện mật khẩu"}</span>
+                {visibleConfirm ? <Eye size={18} aria-hidden /> : <EyeOff size={18} aria-hidden />}
+              </button>
             </div>
           </div>
 
-          <div>
+          <div className="relative">
             <label className="block text-sm font-medium text-slate-700">Mật khẩu mới</label>
-            <div className="mt-2 relative">
+            <div className="mt-2 relative"> 
               <input
-                type={visible ? "text" : "password"}
+                type={visiblePassword ? "text" : "password"}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
@@ -112,34 +124,48 @@ export default function ResetPasswordPage() {
                 aria-required
                 aria-describedby="pw-hint"
               />
-          
-            </div>
-            <div id="pw-hint" className="text-xs text-slate-500 mt-1">
-              Ít nhất 8 ký tự, nên chứa chữ số.
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-slate-700">Xác nhận mật khẩu</label>
-            <input
-              type={visible ? "text" : "password"}
-              value={confirm}
-              onChange={(e) => setConfirm(e.target.value)}
-              required
-              minLength={8}
-              className="mt-2 w-full px-4 py-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-blue-200 outline-none"
-              placeholder="Nhập lại mật khẩu"
-            />
-          </div>
-
-          <button
+              <button
                 type="button"
-                onClick={() => setVisible((s) => !s)}
-                aria-label={visible ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
-                className="flex  items-center gap-2 border px-2 rounded-lg text-sm text-slate-500"
-              >
-                <Eye size={18}/>{visible ? "Ẩn" : "Hiện"}
-          </button>
+                onClick={() => setVisiblePassword((v) => !v)}
+                aria-pressed={visibleConfirm}
+                aria-label={visibleConfirm ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
+                className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-2 rounded p-1 text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-200">
+                <span className="sr-only">{visibleConfirm ? "Ẩn mật khẩu" : "Hiện mật khẩu"}</span>
+                {visibleConfirm ? <Eye size={18} aria-hidden /> : <EyeOff size={18} aria-hidden />}
+              </button>
+            </div>
+            { error === null ? (
+              <div id="pw-hint" className="text-xs text-slate-500 mt-1">
+                Ít nhất 8 ký tự, nên chứa chữ số.
+              </div>
+            ) : (
+              <div className="text-sm text-red-600 px-2 pt-2">{error}</div>
+            )}
+          </div>
+
+          <div className="relative">
+            <label className="block text-sm font-medium text-slate-700">Xác nhận mật khẩu</label>
+            <div className="mt-2 relative">
+              <input
+                type={visibleConfirm ? "text" : "password"}
+                value={confirm}
+                onChange={(e) => setConfirm(e.target.value)}
+                required
+                minLength={8}
+                autoComplete="new-password"
+                placeholder="Nhập lại mật khẩu"
+                className={`w-full pr-12 px-4 py-3 rounded-lg border border-gray-200 transition-colors outline-none focus:ring-2 focus:ring-blue-200`}/>
+              <button
+                type="button"
+                onClick={() => setVisibleConfirm((v) => !v)}
+                aria-pressed={visibleConfirm}
+                aria-label={visibleConfirm ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
+                className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-2 rounded p-1 text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-200">
+                <span className="sr-only">{visibleConfirm ? "Ẩn mật khẩu" : "Hiện mật khẩu"}</span>
+                {visibleConfirm ? <Eye size={18} aria-hidden /> : <EyeOff size={18} aria-hidden />}
+              </button>
+            </div>
+          </div>
           <button
             type="submit"
             disabled={loading || !!success}
