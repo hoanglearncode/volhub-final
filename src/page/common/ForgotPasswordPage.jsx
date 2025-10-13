@@ -33,7 +33,12 @@ export default function ForgotPasswordPage() {
         navigate(`/auth/reset?token=${email}`);
       } 
     } catch (err) {
+      console.log(err)
       if ( err.response.data?.code === 1001 ) {
+        setError("Thông tin email không chính xác!");
+        toast.error("Thông tin email không chính xác!");  
+      }
+      if ( err.response.data?.code === 9000 ) {
         setError("Thông tin email không chính xác!");
         toast.error("Thông tin email không chính xác!");  
       }

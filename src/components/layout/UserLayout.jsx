@@ -36,29 +36,8 @@ import Footer from "../../components/common/Footer.jsx";
 import FloatingActionButton from "../common/ChatBotWidget.jsx";
 import MobileNav from "../common/MobileNav.jsx";
 
-/**
- * Responsive + Accessible TopNav & UserLayout
- * - giữ nguyên các chức năng (nav, user menu, mobile panel, logout...)
- * - thêm focus trap, aria attributes, prefers-reduced-motion handling, safe-area bottom padding
- */
-
-/* -------------------------
-   Helpers
-   ------------------------- */
 const focusableSelector = 'a[href], button:not([disabled]), textarea, input, select, [tabindex]:not([tabindex="-1"])';
 
-function usePrefersReducedMotion() {
-  const [reduced, setReduced] = useState(false);
-  useEffect(() => {
-    if (typeof window === "undefined" || !window.matchMedia) return;
-    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
-    setReduced(mq.matches);
-    const handler = () => setReduced(mq.matches);
-    mq.addEventListener ? mq.addEventListener("change", handler) : mq.addListener(handler);
-    return () => (mq.removeEventListener ? mq.removeEventListener("change", handler) : mq.removeListener(handler));
-  }, []);
-  return reduced;
-}
 
 function trapFocus(containerRef, active) {
   useEffect(() => {
@@ -86,11 +65,8 @@ function trapFocus(containerRef, active) {
   }, [containerRef, active]);
 }
 
-/* -------------------------
-   TopNav Component
-   ------------------------- */
 function TopNav() {
-  const { user, logout } = useAuth();
+  const { logout } = useAuth();
   const location = useLocation();
   const pathname = location.pathname;
 
@@ -99,12 +75,14 @@ function TopNav() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [notificationCount, setNotificationCount] = useState(3);
+  const [user, setUser] = useState({
+    scope: 'ROLE_VOLUNTEER',
+    verified: true
+  })
 
   const userMenuRef = useRef(null);
   const mobilePanelRef = useRef(null);
   const firstMobileLinkRef = useRef(null);
-
-  const reducedMotion = usePrefersReducedMotion();
 
   // trap focus while open
   trapFocus(userMenuRef, userMenuOpen);
@@ -184,15 +162,17 @@ function TopNav() {
     if (mobileOpen) {
       const prev = document.body.style.overflow;
       document.body.style.overflow = "hidden";
-      setTimeout(() => firstMobileLinkRef.current?.focus(), reducedMotion ? 0 : 80);
+      setTimeout(() => firstMobileLinkRef.current?.focus(), 80);
       return () => {
         document.body.style.overflow = prev;
       };
     }
-  }, [mobileOpen, reducedMotion]);
+  }, [mobileOpen]);
+
+  
 
   // helper classes
-  const transitionBase = reducedMotion ? "" : "transition-all duration-300";
+  const transitionBase = "transition-all duration-300";
   const itemClass = (idx) =>
     `relative px-3 py-2 rounded-xl text-sm font-medium flex items-center gap-2 ${transitionBase} ${
       idx === activeIndex
@@ -218,6 +198,7 @@ function TopNav() {
     badgeCount: user?.badgeCount || 0
   };
 
+  
   return (
     <header
       className={`fixed px-4 py-2 md:px-6 md:py-3 lg:px-20 top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md border-b ${transitionBase} ${scrolled ? "shadow-lg border-gray-200" : "border-transparent"}`}
@@ -305,19 +286,13 @@ function TopNav() {
                         ) : (
                           <span className="font-bold text-sm">{user?.name?.charAt(0) ?? "U"}</span>
                         )}
-                        {user?.verified && (
-                          <div className="absolute -bottom-1 -right-1 w-3 h-3 md:w-4 md:h-4 bg-blue-500 rounded-full border-2 border-white flex items-center justify-center">
-                            <svg className="w-2 h-2 text-white" fill="currentColor" viewBox="0 0 20 20">
-                              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                            </svg>
-                          </div>
-                        )}
                       </div>
                       <div className="hidden xl:block text-left">
                         <div className="text-sm font-semibold text-slate-800">{user?.name ?? "Người dùng"}</div>
-                        <div className="text-xs text-slate-500 flex items-center gap-1">
-                          <span className={`w-2 h-2 rounded-full bg-gradient-to-r ${getUserLevelColor(userLevel)}`} style={{ display: "inline-block" }}></span>
-                          {userLevel}
+                        <div className="text-xs text-slate-500 flex items-center gap-1 mt-1.5">
+                          {user.verified && (
+                                <span className="px-2 py-0.5 text-xs rounded-full bg-blue-100 text-blue-600">Đã xác minh</span>
+                              )}
                         </div>
                       </div>
                       <ChevronDown
@@ -329,7 +304,7 @@ function TopNav() {
 
                     {/* User Dropdown Menu */}
                     <div
-                      className={`absolute right-0 mt-3 w-72 bg-white rounded-2xl shadow-xl border border-gray-200 py-3 transform origin-top-right ${userMenuOpen ? "opacity-100 scale-100 visible" : "opacity-0 scale-95 invisible"} ${reducedMotion ? "" : "transition-all duration-200"}`}
+                      className={`absolute right-0 mt-3 w-72 bg-white rounded-2xl shadow-xl border border-gray-200 py-3 transform origin-top-right ${userMenuOpen ? "opacity-100 scale-100 visible" : "opacity-0 scale-95 invisible"} `}
                       role="menu"
                       aria-label="Menu người dùng"
                     >
@@ -347,10 +322,7 @@ function TopNav() {
                             <div className="font-semibold text-slate-800">{user?.name ?? "Người dùng"}</div>
                             <div className="text-xs text-slate-500">{user?.email}</div>
                             <div className="flex items-center gap-2 mt-1">
-                              <span className={`px-2 py-0.5 text-xs rounded-full bg-gradient-to-r ${getUserLevelColor(userLevel)} text-white`}>
-                                {userLevel}
-                              </span>
-                              {user?.verified && (
+                              {user.verified && (
                                 <span className="px-2 py-0.5 text-xs rounded-full bg-blue-100 text-blue-600">Đã xác minh</span>
                               )}
                             </div>
@@ -447,7 +419,17 @@ function TopNav() {
       </div>
 
       {/* Mobile panel - bottom sheet on small screens */}
-      {mobileOpen && <MobileNav mobileOpen={mobileOpen} mobilePanelRef={mobilePanelRef} user={user} notificationCount={notificationCount} userStats={userStats} navItems={navItems} firstMobileLinkRef={firstMobileLinkRef}/>}
+      {mobileOpen && <MobileNav 
+          mobileOpen={mobileOpen} 
+          setMobileOpen={setMobileOpen} 
+          navItems={navItems} 
+          mobilePanelRef={mobilePanelRef} 
+          user={user} 
+          notificationCount={notificationCount} 
+          userStats={userStats}
+          activeIndex={activeIndex}
+          userMenuItems ={userMenuItems}
+          firstMobileLinkRef={firstMobileLinkRef}/>}
     </header>
   );
 }

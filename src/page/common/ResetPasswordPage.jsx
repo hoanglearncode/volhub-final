@@ -1,4 +1,4 @@
-"use client";
+import axios from "axios";
 import { Eye, EyeOff } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { useSearchParams, useNavigate, Link } from "react-router-dom";
@@ -20,9 +20,7 @@ export default function ResetPasswordPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
-
-  
-
+  console.log(token)
   const validatePassword = (pw) => {
     if (!pw || pw.length < 8) return "Mật khẩu phải có ít nhất 8 ký tự.";
     if (!/[0-9]/.test(pw)) return "Mật khẩu nên chứa ít nhất 1 chữ số.";
@@ -51,6 +49,7 @@ export default function ResetPasswordPage() {
         password: password,
         appPassword: appPassword
       });
+      console.log(res);
       if (res.data?.code === 0 && res.data?.result) {
         const res = await axios.post(`${import.meta.env.VITE_API}/auth/token`, {
           email: token.toLowerCase(),
@@ -66,6 +65,7 @@ export default function ResetPasswordPage() {
         }
       } 
     } catch (err) {
+      console.log(err)
       if ( err.response.data?.code === 1001 ) {
         setError("Thông tin email không chính xác!");
         toast.error("Thông tin email không chính xác!");  

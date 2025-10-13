@@ -1,12 +1,26 @@
-export default function MobileNav ({mobileOpen, mobilePanelRef, user, notificationCount, userStats, firstMobileLinkRef}) {
+import { Link } from "react-router-dom";
+import { Bell, LogOut } from "lucide-react";
+import { useAuth } from "../../context/AuthContext";
+
+export default function MobileNav ({mobileOpen,
+    setMobileOpen,
+    navItems, 
+    mobilePanelRef, 
+    user, 
+    notificationCount, 
+    userStats, 
+    firstMobileLinkRef,
+    activeIndex,
+    userMenuItems }) {
+    const { logout } = useAuth();
     return (
         <div
-            className={`fixed w-full h-full inset-x-0 z-40 ${mobileOpen ? "visible" : "invisible"} ${reducedMotion ? "" : "transition-opacity duration-200 px-4"}`}
+            className={`fixed w-full h-full inset-x-0 z-40 ${mobileOpen ? "visible" : "invisible"} transition-opacity duration-200 px-4`}
             aria-hidden={!mobileOpen}
         >
             {/* Overlay */}
             <div
-            className={`fixed inset-0 bg-black/40 backdrop-blur-sm ${mobileOpen ? "opacity-100" : "opacity-0"} ${reducedMotion ? "" : "transition-opacity duration-200"}`}
+            className={`fixed inset-0 bg-black/40 backdrop-blur-sm ${mobileOpen ? "opacity-100" : "opacity-0"} transition-opacity duration-200"}`}
             onClick={() => setMobileOpen(false)}
             aria-hidden
             />
@@ -18,7 +32,7 @@ export default function MobileNav ({mobileOpen, mobilePanelRef, user, notificati
             aria-label="Menu điều hướng"
             // bottom-sheet style: small devices bottom:0, takes 60-80% height; on slightly larger screens behave like panel top
             style={{ paddingBottom: typeof window !== "undefined" ? `env(safe-area-inset-bottom)` : undefined }}
-            className={`relative bg-white shadow-2xl border-t border-gray-200 w-full max-h-[85vh] overflow-y-auto transform ${mobileOpen ? "translate-y-0" : "translate-y-full"} ${reducedMotion ? "" : "transition-transform duration-300"} rounded-t-2xl`}
+            className={`relative bg-white shadow-2xl border-t border-gray-200 w-full max-h-[85vh] overflow-y-auto transform ${mobileOpen ? "translate-y-0" : "translate-y-full"} transition-transform duration-300"} rounded-t-2xl`}
             >
             <div className="py-4 px-4 md:py-6 md:px-6">
                 {/* User info */}
@@ -35,8 +49,6 @@ export default function MobileNav ({mobileOpen, mobilePanelRef, user, notificati
                     <div className="flex-1">
                         <div className="font-semibold text-slate-800">{user?.name ?? "Người dùng"}</div>
                         <div className="text-sm text-slate-600 flex items-center gap-1">
-                        <span className={`w-2 h-2 rounded-full bg-gradient-to-r`} style={{ display: "inline-block" }}></span>
-                        {userLevel}
                         {user?.verified && <span className="text-blue-500">• Đã xác minh</span>}
                         </div>
                     </div>
@@ -128,7 +140,7 @@ export default function MobileNav ({mobileOpen, mobilePanelRef, user, notificati
                 {user !== null ? (
                     <div className="space-y-3">
                     <button
-                        onClick={() => { logout?.(); setMobileOpen(false); }}
+                        onClick={() => { logout(); setMobileOpen(false); }}
                         className="flex items-center gap-3 px-4 py-3.5 rounded-xl text-sm font-medium text-red-600 hover:bg-red-50 w-full"
                     >
                         <LogOut size={20} aria-hidden />
