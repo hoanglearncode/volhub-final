@@ -8,14 +8,13 @@ export default function MobileNav ({mobileOpen,
     mobilePanelRef, 
     user, 
     notificationCount, 
-    userStats, 
     firstMobileLinkRef,
     activeIndex,
     userMenuItems }) {
-    const { logout } = useAuth();
+    const { logout, token } = useAuth();
     return (
         <div
-            className={`fixed w-full h-full inset-x-0 z-40 ${mobileOpen ? "visible" : "invisible"} transition-opacity duration-200 px-4`}
+            className={`absolute top-0 right-0 min-h-screen w-screen backdrop-blur-md flex flex-col items-center justify-center inset-x-0 z-40 ${mobileOpen ? "visible" : "invisible"} transition-opacity duration-200 px-4`}
             aria-hidden={!mobileOpen}
         >
             {/* Overlay */}
@@ -26,64 +25,48 @@ export default function MobileNav ({mobileOpen,
             />
 
             <div
-            ref={mobilePanelRef}
-            role="dialog"
-            aria-modal="true"
-            aria-label="Menu điều hướng"
-            // bottom-sheet style: small devices bottom:0, takes 60-80% height; on slightly larger screens behave like panel top
-            style={{ paddingBottom: typeof window !== "undefined" ? `env(safe-area-inset-bottom)` : undefined }}
-            className={`relative bg-white shadow-2xl border-t border-gray-200 w-full max-h-[85vh] overflow-y-auto transform ${mobileOpen ? "translate-y-0" : "translate-y-full"} transition-transform duration-300"} rounded-t-2xl`}
-            >
+                ref={mobilePanelRef}
+                role="dialog"
+                aria-modal="true"
+                aria-label="Menu điều hướng"
+                className={`relative bg-white shadow-2xl border-t border-gray-200 w-full max-h-[85vh] overflow-y-auto transform ${mobileOpen ? "translate-y-0" : "translate-y-full"} transition-transform duration-300"} rounded-xl`}>
             <div className="py-4 px-4 md:py-6 md:px-6">
                 {/* User info */}
-                {user !== null && (
+                {token && (
                 <div className="mb-6 p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-2xl">
                     <div className="flex items-center gap-3 mb-3">
-                    <div className={`w-12 h-12 rounded-full bg-gradient-to-br flex items-center justify-center text-white overflow-hidden`}>
-                        {user?.avatar ? (
-                        <img src={user.avatar} alt={`${user.name} avatar`} className="w-full h-full object-cover" />
+                    <div className={`w-12 h-12 rounded-full bg-gradient-to-br from-amber-600 to-orange-600 flex items-center justify-center text-white overflow-hidden`}>
+                        {user?.basicInfo?.avatarUrl ? (
+                        <img src={user?.basicInfo?.avatarUrl} alt={`${user?.basicInfo?.name} avatar`} className="w-full h-full object-cover" />
                         ) : (
-                        <span className="font-bold">{user?.name?.charAt(0) ?? "U"}</span>
+                        <span className="font-bold">{user?.basicInfo?.name?.charAt(0) ?? "U"}</span>
                         )}
                     </div>
                     <div className="flex-1">
-                        <div className="font-semibold text-slate-800">{user?.name ?? "Người dùng"}</div>
+                        <div className="font-semibold text-slate-800">{user?.basicInfo?.name ?? "Người dùng"}</div>
                         <div className="text-sm text-slate-600 flex items-center gap-1">
-                        {user?.verified && <span className="text-blue-500">• Đã xác minh</span>}
+                        {user?.basicInfo?.isVerify && <span className="text-blue-500">• Đã xác minh</span>}
                         </div>
                     </div>
-                    {notificationCount > 0 && (
-                        <Link
-                        to="/notifications"
-                        onClick={() => setMobileOpen(false)}
-                        className="relative p-2 rounded-xl text-slate-600 hover:text-blue-600 hover:bg-blue-100 transition-all"
-                        aria-label={`Thông báo (${notificationCount})`}
-                        >
-                        <Bell size={20} aria-hidden />
-                        <span className="absolute -top-1 -right-1 min-w-[18px] h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center font-medium">
-                            {notificationCount > 9 ? '9+' : notificationCount}
-                        </span>
-                        </Link>
-                    )}
                     </div>
 
                     {/* Mobile quick stats */}
                     <div className="grid grid-cols-4 gap-3">
                     <div className="text-center">
-                        <div className="text-lg font-bold text-slate-800">{userStats.totalHours}</div>
-                        <div className="text-xs text-slate-500">Giờ</div>
+                        <div className="text-lg font-bold text-slate-800">{user?.basicInfo?.followers}</div>
+                        <div className="text-xs text-slate-500">Người theo dõi</div>
                     </div>
                     <div className="text-center">
-                        <div className="text-lg font-bold text-slate-800">{userStats.eventsCount}</div>
-                        <div className="text-xs text-slate-500">Sự kiện</div>
+                        <div className="text-lg font-bold text-slate-800">{user?.basicInfo?.followings}</div>
+                        <div className="text-xs text-slate-500">Đang theo dõi</div>
                     </div>
                     <div className="text-center">
-                        <div className="text-lg font-bold text-slate-800">{userStats.reputation}</div>
+                        <div className="text-lg font-bold text-slate-800">{user?.basicInfo?.ratting}</div>
                         <div className="text-xs text-slate-500">Uy tín</div>
                     </div>
                     <div className="text-center">
-                        <div className="text-lg font-bold text-slate-800">{userStats.badgeCount}</div>
-                        <div className="text-xs text-slate-500">Huy hiệu</div>
+                        <div className="text-lg font-bold text-slate-800">{user?.basicInfo?.totalEvent}</div>
+                        <div className="text-xs text-slate-500">Sự kiện</div>
                     </div>
                     </div>
                 </div>

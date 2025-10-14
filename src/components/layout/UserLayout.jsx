@@ -35,6 +35,7 @@ import {
 import Footer from "../../components/common/Footer.jsx";
 import FloatingActionButton from "../common/ChatBotWidget.jsx";
 import MobileNav from "../common/MobileNav.jsx";
+import axios from "axios";
 
 const focusableSelector = 'a[href], button:not([disabled]), textarea, input, select, [tabindex]:not([tabindex="-1"])';
 
@@ -66,7 +67,7 @@ function trapFocus(containerRef, active) {
 }
 
 function TopNav() {
-  const { logout } = useAuth();
+  const { logout, token } = useAuth();
   const location = useLocation();
   const pathname = location.pathname;
 
@@ -77,7 +78,13 @@ function TopNav() {
   const [notificationCount, setNotificationCount] = useState(3);
   const [user, setUser] = useState({
     scope: 'ROLE_VOLUNTEER',
-    verified: true
+    verified: true,
+    userStats : {
+      totalHours: 0,
+      eventsCount: 0,
+      reputation: 0,
+      badgeCount: 0
+    }
   })
 
   const userMenuRef = useRef(null);
@@ -169,7 +176,39 @@ function TopNav() {
     }
   }, [mobileOpen]);
 
-  
+  useEffect(() => {
+    if (!token) return; 
+
+    const load = async () => {
+      try {
+        const res = await axios.get(`${import.meta.env.VITE_API}/api/volunteer/profile/me`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if(res.data?.code === 0){ 
+          setUser(res.data?.result);
+        }
+      } catch (rawError) {
+        if (axios.isAxiosError(rawError)) {
+          const ae = rawError;
+          console.error("Axios error snapshot:", JSON.parse(JSON.stringify({
+            message: ae.message,
+            code: ae.code,
+            status: ae.response?.status,
+            data: ae.response?.data,
+            headers: ae.response?.headers,
+            hasRequest: !!ae.request
+          })));
+          if (ae.response?.status === 403) {
+            console.warn("Access denied — token invalid/expired or user lacks role");
+          }
+        } else {
+          console.error("Non-axios error", rawError);
+        }
+      }
+    };
+
+    load();
+  }, [token]);
 
   // helper classes
   const transitionBase = "transition-all duration-300";
@@ -179,24 +218,6 @@ function TopNav() {
         ? "text-blue-600 bg-blue-50 shadow-sm"
         : "text-slate-700 hover:text-blue-600 hover:bg-blue-50/60"
     }`;
-
-  const getUserLevelColor = (level) => {
-    const colors = {
-      Bronze: "from-amber-600 to-orange-600",
-      Silver: "from-slate-400 to-slate-600", 
-      Gold: "from-yellow-400 to-yellow-600",
-      Platinum: "from-purple-400 to-purple-600"
-    };
-    return colors[level] || "from-blue-500 to-purple-600";
-  };
-
-  const userLevel = user?.level || "Bronze";
-  const userStats = {
-    totalHours: user?.totalHours || 0,
-    eventsCount: user?.eventsCount || 0,
-    reputation: user?.reputation || 0,
-    badgeCount: user?.badgeCount || 0
-  };
 
   
   return (
@@ -254,7 +275,7 @@ function TopNav() {
           <div className="flex items-center gap-2 md:gap-4">
             {/* Desktop actions */}
             <div className="hidden md:flex items-center gap-3">
-              {user !== null ? (
+              {token ? (
                 <>
                   {/* Notifications */}
                   <Link
@@ -280,17 +301,17 @@ function TopNav() {
                       aria-expanded={userMenuOpen}
                       aria-label="Mở menu người dùng"
                     >
-                      <div className={`relative w-9 h-9 md:w-10 md:h-10 rounded-full bg-gradient-to-br ${getUserLevelColor(userLevel)} flex items-center justify-center text-white shadow-lg overflow-hidden`}>
-                        {user?.avatar ? (
-                          <img src={user.avatar} alt={`${user.name} avatar`} className="w-full h-full object-cover" />
+                      <div className={`relative w-9 h-9 md:w-10 md:h-10 rounded-full bg-gradient-to-br from-amber-600 to-orange-600 flex items-center justify-center text-white shadow-lg overflow-hidden`}>
+                        {user?.basicInfo?.avatarUr? (
+                          <img src={user?.basicInfo?.avatarUr} alt={`${user?.basicInfo?.name} avatar`} className="w-full h-full object-cover" />
                         ) : (
-                          <span className="font-bold text-sm">{user?.name?.charAt(0) ?? "U"}</span>
+                          <span className="font-bold text-sm">{user?.basicInfo?.name?.charAt(0) ?? "U"}</span>
                         )}
                       </div>
                       <div className="hidden xl:block text-left">
-                        <div className="text-sm font-semibold text-slate-800">{user?.name ?? "Người dùng"}</div>
+                        <div className="text-sm font-semibold text-slate-800">{user?.basicInfo?.name ?? "Người dùng"}</div>
                         <div className="text-xs text-slate-500 flex items-center gap-1 mt-1.5">
-                          {user.verified && (
+                          {user?.basicInfo?.isVerify && (
                                 <span className="px-2 py-0.5 text-xs rounded-full bg-blue-100 text-blue-600">Đã xác minh</span>
                               )}
                         </div>
@@ -304,25 +325,24 @@ function TopNav() {
 
                     {/* User Dropdown Menu */}
                     <div
-                      className={`absolute right-0 mt-3 w-72 bg-white rounded-2xl shadow-xl border border-gray-200 py-3 transform origin-top-right ${userMenuOpen ? "opacity-100 scale-100 visible" : "opacity-0 scale-95 invisible"} `}
+                      className={`absolute right-0 mt-3 w-72 bg-white rounded-2xl shadow-xl from-amber-600 to-orange-600 border border-gray-200 py-3 transform origin-top-right ${userMenuOpen ? "opacity-100 scale-100 visible" : "opacity-0 scale-95 invisible"} `}
                       role="menu"
                       aria-label="Menu người dùng"
                     >
                       {/* User info header */}
                       <div className="px-4 pb-3 border-b border-gray-100">
                         <div className="flex items-center gap-3">
-                          <div className={`w-12 h-12 rounded-full bg-gradient-to-br ${getUserLevelColor(userLevel)} flex items-center justify-center text-white overflow-hidden`}>
-                            {user?.avatar ? (
-                              <img src={user.avatar} alt={`${user.name} avatar`} className="w-full h-full object-cover" />
+                          <div className={`w-12 h-12 rounded-full bg-gradient-to-br from-amber-600 to-orange-600 flex items-center justify-center text-white overflow-hidden`}>
+                            {user?.basicInfo?.avatarUrl ? (
+                              <img src={user?.basicInfo?.avatarUrl} alt={`${user?.basicInfo?.name} avatar`} className="w-full h-full object-cover" />
                             ) : (
                               <span className="font-bold">{user?.name?.charAt(0) ?? "U"}</span>
                             )}
                           </div>
                           <div className="flex-1">
-                            <div className="font-semibold text-slate-800">{user?.name ?? "Người dùng"}</div>
-                            <div className="text-xs text-slate-500">{user?.email}</div>
+                            <div className="font-semibold text-slate-800">{user?.basicInfo?.name ?? "Người dùng"}</div>
                             <div className="flex items-center gap-2 mt-1">
-                              {user.verified && (
+                              {user?.basicInfo?.isVerify && (
                                 <span className="px-2 py-0.5 text-xs rounded-full bg-blue-100 text-blue-600">Đã xác minh</span>
                               )}
                             </div>
@@ -332,25 +352,23 @@ function TopNav() {
                         {/* Quick stats in dropdown */}
                         <div className="grid grid-cols-4 gap-2 mt-3 pt-3 border-t border-gray-100">
                           <div className="text-center">
-                            <div className="text-lg font-bold text-slate-800">{userStats.totalHours}</div>
-                            <div className="text-xs text-slate-500">Giờ</div>
+                            <div className="text-lg font-bold text-slate-800">{user?.basicInfo?.followers}</div>
+                            <div className="text-xs text-slate-500">Người theoo dõi</div>
                           </div>
                           <div className="text-center">
-                            <div className="text-lg font-bold text-slate-800">{userStats.eventsCount}</div>
-                            <div className="text-xs text-slate-500">Sự kiện</div>
+                            <div className="text-lg font-bold text-slate-800">{user?.basicInfo?.followings}</div>
+                            <div className="text-xs text-slate-500">Đang theo dõi</div>
                           </div>
                           <div className="text-center">
-                            <div className="text-lg font-bold text-slate-800">{userStats.reputation}</div>
+                            <div className="text-lg font-bold text-slate-800">{user?.basicInfo?.ratting}</div>
                             <div className="text-xs text-slate-500">Uy tín</div>
                           </div>
                           <div className="text-center">
-                            <div className="text-lg font-bold text-slate-800">{userStats.badgeCount}</div>
-                            <div className="text-xs text-slate-500">Huy hiệu</div>
+                            <div className="text-lg font-bold text-slate-800">{user?.basicInfo?.totalEvent}</div>
+                            <div className="text-xs text-slate-500">Sự kiện</div>
                           </div>
                         </div>
-                      </div>
-
-                      { user.scope === 'ROLE_VOLUNTEER' &&      
+                      </div>  
                       <div className="py-2" role="none">
                         {userMenuItems.map((item, idx) => {
                           const Icon = item.icon;
@@ -366,9 +384,8 @@ function TopNav() {
                             </Link>
                           );
                         })}
-                      </div>}
-
-                      
+                      </div>
+ 
                       <div className="border-t border-gray-100 pt-2">
                         <button
                           onClick={() => logout?.()}
@@ -426,7 +443,6 @@ function TopNav() {
           mobilePanelRef={mobilePanelRef} 
           user={user} 
           notificationCount={notificationCount} 
-          userStats={userStats}
           activeIndex={activeIndex}
           userMenuItems ={userMenuItems}
           firstMobileLinkRef={firstMobileLinkRef}/>}

@@ -3,7 +3,6 @@ import { Calendar, Users, Heart, ArrowRight, MapPin, Clock, Search, TrendingUp, 
 
 export default function Home() {
   const [scrollY, setScrollY] = useState(0);
-
   useEffect(() => {
     const handleScroll = () => setScrollY(window.scrollY);
     window.addEventListener('scroll', handleScroll);
@@ -71,6 +70,20 @@ export default function Home() {
     }
   ];
 
+  const data = {
+    stats: {
+      totalVolunteer: 0,
+      weEvent: 0,
+      houseActive: 0,
+      totalPanner: 0,
+    },
+    event : [
+      // 6 sự kiện từ `${import.meta.env.VITE_API}/api/volunteer/events`, 
+    ],
+    communities: [
+      // 6 bài viết từ api bài viết 
+    ]
+  }
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white">
       {/* Hero Section */}

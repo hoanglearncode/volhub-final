@@ -425,44 +425,63 @@ const EmptyState = ({ searchTerm }) => (
 );
 
 // Trending Events Sidebar
-const TrendingEventsSidebar = ({ events }) => (
-  <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-200">
-    <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-      <TrendingUp className="w-5 h-5 text-red-500" />
-      Sự kiện thịnh hành
-    </h3>
-    <div className="space-y-4">
-      {events.map((event, index) => (
-        <a 
-          key={event.id}
-          href={`/events/${event.slug}`}
-          className="flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 transition-colors cursor-pointer"
-        >
-          <div 
-            className="w-12 h-12 rounded-lg bg-cover bg-center flex-shrink-0" 
-            style={{ backgroundImage: `url(${event.coverImage})` }}
-          />
-          <div className="flex-1 min-w-0">
-            <h4 className="font-medium text-gray-900 text-sm line-clamp-1">
-              {event.title}
-            </h4>
-            <div className="flex items-center gap-2 mt-1">
-              <span className="text-xs text-gray-500">{event.location}</span>
-              <span className="text-xs text-yellow-500 flex items-center gap-1">
-                <Star className="w-3 h-3 fill-current" />
-                {event.rating}
-              </span>
+const TrendingEventsSidebar = () => {
+  const [events, setEvents] = useState([]);
+    useEffect(() => {
+    const loaded = async () => {
+      try {
+        const event = await axios.get(`${import.meta.env.VITE_API}/api/volunteer/events`); 
+        // cần api lấy ra 5 sự kiện đang diễn ra có lượt truy cập nhiều nhất
+        if (event.data.code === 0){
+          setEvents(event.data?.result);
+        }
+      } catch (error) {
+        console.error("Error fetching events:", error);
+        toast.error("Đã xảy ra lỗi khi tải sự kiện.");
+      }
+    }
+
+    loaded();
+  },[]);
+  return (
+    <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-200">
+      <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+        <TrendingUp className="w-5 h-5 text-red-500" />
+        Sự kiện thịnh hành
+      </h3>
+      <div className="space-y-4">
+        {events.map((event, index) => (
+          <a 
+            key={event.id}
+            href={`/events/${event.slug}`}
+            className="flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 transition-colors cursor-pointer"
+          >
+            <div 
+              className="w-12 h-12 rounded-lg bg-cover bg-center flex-shrink-0" 
+              style={{ backgroundImage: `url(${event.coverImage})` }}
+            />
+            <div className="flex-1 min-w-0">
+              <h4 className="font-medium text-gray-900 text-sm line-clamp-1">
+                {event.title}
+              </h4>
+              <div className="flex items-center gap-2 mt-1">
+                <span className="text-xs text-gray-500">{event.location}</span>
+                <span className="text-xs text-yellow-500 flex items-center gap-1">
+                  <Star className="w-3 h-3 fill-current" />
+                  {event.rating}
+                </span>
+              </div>
             </div>
-          </div>
-          <div className="text-right flex-shrink-0">
-            <div className="text-xs font-medium text-gray-900">#{index + 1}</div>
-            <div className="text-xs text-gray-500">{event.currentVolunteers} người</div>
-          </div>
-        </a>
-      ))}
+            <div className="text-right flex-shrink-0">
+              <div className="text-xs font-medium text-gray-900">#{index + 1}</div>
+              <div className="text-xs text-gray-500">{event.currentVolunteers} người</div>
+            </div>
+          </a>
+        ))}
+      </div>
     </div>
-  </div>
-);
+  )
+};
 
 // Tips Card Sidebar
 const TipsCardSidebar = () => (
@@ -518,7 +537,6 @@ const CommunityPage = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [featuredPosts, setFeaturedPosts] = useState([]);
   const [blogPosts, setBlogPosts] = useState([]);
-  const [trendingEvent, setTrendingEvent] = useState([]);
 
   const itemsPerPage = 10;
   const categories = mockData.categories;
@@ -671,10 +689,8 @@ const CommunityPage = () => {
           {/* Sidebar */}
           <aside className="lg:col-span-4 mt-8 lg:mt-0">
             <div className="space-y-6">
-              {/* Trending Events */}
-              {trendingEvent.length > 0 && (
-                <TrendingEventsSidebar events={trendingEvent} />
-              )}
+              <TrendingEventsSidebar />
+      
 
               <UpcomingEventsWidget />
               {/* Tips Card */}
