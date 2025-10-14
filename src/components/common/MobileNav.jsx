@@ -95,9 +95,6 @@ export default function MobileNav ({mobileOpen,
                     );
                 })}
                 </div>
-
-                {/* Additional menu items for authenticated users */}
-                {user !== null && user.scope === 'ROLE_VOLUNTEER' && (
                 <div className="border-t border-gray-200 pt-6 mb-6">
                     <div className="space-y-2">
                     {userMenuItems.map((item, idx) => {
@@ -116,7 +113,6 @@ export default function MobileNav ({mobileOpen,
                     })}
                     </div>
                 </div>
-                )}
 
                 {/* Auth actions */}
                 <div className="border-t border-gray-200 pt-6">
