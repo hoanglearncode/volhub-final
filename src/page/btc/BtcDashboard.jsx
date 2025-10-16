@@ -55,61 +55,52 @@ import {
 } from 'recharts';
 import { Link } from "react-router-dom";
 
-/**
- * 
- * @returns yêu cầu dữ liêu:
- * - tổng ứng viên 
- * - ứng viên đã đăng ký 
- * - số ứng viên đang chờ 
- * - các sự kiện đang tuyển 
- * 
- * - dữ liệu cho biểu đồ 
- * - event mới nhất và - log
- */
 
 export default function Dashboard() {
-  const [isError, setIsError] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [data, setData] = useState({});
+  const [data, setData] = useState({
+      Stats : {
+      totalCandidates: 1247,
+      activeCandidates: 456,
+      totalHired: 89,
+      pendingReview: 234
+    }
+  });
   const [selectedTimeRange, setSelectedTimeRange] = useState('7d');
+  const [activities, setActivities] = useState([]);
+  const [jobPositionData, setJobPositionData] = useState([]);
+  const [monthlyTrendData, setMonthlyTrendData] = useState([]);
+  const [candidateActivityData, setCandidateActivityData] = useState([]);
+  // const candidateActivityData = [
+  //   { name: 'T2', applications: 45, interviews: 12, hired: 3 },
+  //   { name: 'T3', applications: 52, interviews: 18, hired: 5 },
+  //   { name: 'T4', applications: 38, interviews: 15, hired: 2 },
+  //   { name: 'T5', applications: 61, interviews: 22, hired: 7 },
+  //   { name: 'T6', applications: 48, interviews: 16, hired: 4 },
+  //   { name: 'T7', applications: 35, interviews: 8, hired: 1 },
+  //   { name: 'CN', applications: 25, interviews: 5, hired: 0 }
+  // ];
 
-  // Dữ liệu mẫu cho các biểu đồ
-  const candidateActivityData = [
-    { name: 'T2', applications: 45, interviews: 12, hired: 3 },
-    { name: 'T3', applications: 52, interviews: 18, hired: 5 },
-    { name: 'T4', applications: 38, interviews: 15, hired: 2 },
-    { name: 'T5', applications: 61, interviews: 22, hired: 7 },
-    { name: 'T6', applications: 48, interviews: 16, hired: 4 },
-    { name: 'T7', applications: 35, interviews: 8, hired: 1 },
-    { name: 'CN', applications: 25, interviews: 5, hired: 0 }
-  ];
+
+  // const monthlyTrendData = [
+  //   { month: 'Jan', totalApplicants: 320, hired: 45, rejected: 180, pending: 95 },
+  //   { month: 'Feb', totalApplicants: 385, hired: 52, rejected: 210, pending: 123 },
+  //   { month: 'Mar', totalApplicants: 442, hired: 63, rejected: 245, pending: 134 },
+  //   { month: 'Apr', totalApplicants: 398, hired: 58, rejected: 220, pending: 120 },
+  //   { month: 'May', totalApplicants: 456, hired: 67, rejected: 268, pending: 121 },
+  //   { month: 'Jun', totalApplicants: 521, hired: 78, rejected: 298, pending: 145 }
+  // ];
+
+  // const jobPositionData = [
+  //   { position: 'Software Engineer', applications: 145, filled: 12, openings: 8 },
+  //   { position: 'Product Manager', applications: 89, filled: 8, openings: 3 },
+  //   { position: 'UI/UX Designer', applications: 76, filled: 6, openings: 4 },
+  //   { position: 'Data Analyst', applications: 65, filled: 5, openings: 2 },
+  //   { position: 'DevOps Engineer', applications: 54, filled: 4, openings: 3 },
+  //   { position: 'QA Tester', applications: 43, filled: 3, openings: 2 }
+  // ];
 
 
-  const monthlyTrendData = [
-    { month: 'Jan', totalApplicants: 320, hired: 45, rejected: 180, pending: 95 },
-    { month: 'Feb', totalApplicants: 385, hired: 52, rejected: 210, pending: 123 },
-    { month: 'Mar', totalApplicants: 442, hired: 63, rejected: 245, pending: 134 },
-    { month: 'Apr', totalApplicants: 398, hired: 58, rejected: 220, pending: 120 },
-    { month: 'May', totalApplicants: 456, hired: 67, rejected: 268, pending: 121 },
-    { month: 'Jun', totalApplicants: 521, hired: 78, rejected: 298, pending: 145 }
-  ];
-
-  const jobPositionData = [
-    { position: 'Software Engineer', applications: 145, filled: 12, openings: 8 },
-    { position: 'Product Manager', applications: 89, filled: 8, openings: 3 },
-    { position: 'UI/UX Designer', applications: 76, filled: 6, openings: 4 },
-    { position: 'Data Analyst', applications: 65, filled: 5, openings: 2 },
-    { position: 'DevOps Engineer', applications: 54, filled: 4, openings: 3 },
-    { position: 'QA Tester', applications: 43, filled: 3, openings: 2 }
-  ];
-
-  // Mock stats
-  const mockStats = {
-    totalCandidates: 1247,
-    activeCandidates: 456,
-    totalHired: 89,
-    pendingReview: 234
-  };
 
   const mockActivities = [
     { id: 1, candidate: "Nguyễn Văn A", action: "Nộp hồ sơ", position: "Software Engineer", time: "2 phút trước", type: "application" },
@@ -220,7 +211,7 @@ export default function Dashboard() {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm font-medium text-gray-600">Tổng ứng viên</p>
-                      <p className="text-2xl font-bold text-gray-900">{mockStats.totalCandidates.toLocaleString()}</p>
+                      <p className="text-2xl font-bold text-gray-900">{data?.Stats.totalCandidates.toLocaleString()}</p>
                     </div>
                     <div className="p-3 bg-blue-100 rounded-full">
                       <Users className="h-6 w-6 text-blue-600" />
@@ -236,7 +227,7 @@ export default function Dashboard() {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm font-medium text-gray-600">Ứng viên đang xử lý</p>
-                      <p className="text-2xl font-bold text-gray-900">{mockStats.activeCandidates.toLocaleString()}</p>
+                      <p className="text-2xl font-bold text-gray-900">{data?.Stats?.activeCandidates.toLocaleString()}</p>
                     </div>
                     <div className="p-3 bg-yellow-100 rounded-full">
                       <Clock className="h-6 w-6 text-yellow-600" />
@@ -252,7 +243,7 @@ export default function Dashboard() {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm font-medium text-gray-600">Đã cộng tác</p>
-                      <p className="text-2xl font-bold text-gray-900">{mockStats.totalHired.toLocaleString()}</p>
+                      <p className="text-2xl font-bold text-gray-900">{data?.Stats?.totalHired.toLocaleString()}</p>
                     </div>
                     <div className="p-3 bg-green-100 rounded-full">
                       <CheckCircle className="h-6 w-6 text-green-600" />
@@ -422,16 +413,16 @@ export default function Dashboard() {
                   </div>
                   
                   <div className="space-y-4">
-                    {mockActivities.slice(0, 10).map(activity => (
-                      <div key={activity.id} className="flex items-start gap-3">
+                    {activities.slice(0, 10).map(activity => (
+                      <div key={activity?.id} className="flex items-start gap-3">
                         <div className="p-2 bg-gray-100 rounded-lg">
-                          {getActivityIcon(activity.type)}
+                          {getActivityIcon(activity?.type)}
                         </div>
                         <div className="flex-1">
-                          <p className="text-sm font-medium text-gray-900">{activity.candidate}</p>
-                          <p className="text-sm text-gray-600">{activity.action}</p>
-                          <p className="text-xs text-gray-500">{activity.position}</p>
-                          <p className="text-xs text-gray-400">{activity.time}</p>
+                          <p className="text-sm font-medium text-gray-900">{activity?.candidate}</p>
+                          <p className="text-sm text-gray-600">{activity?.action}</p>
+                          <p className="text-xs text-gray-500">{activity?.position}</p>
+                          <p className="text-xs text-gray-400">{activity?.time}</p>
                         </div>
                       </div>
                     ))}

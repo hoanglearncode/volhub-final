@@ -55,40 +55,6 @@ export default function Profile() {
     load();
   }, [token]);
 
-    useEffect(() => {
-    if (!token) return; 
-
-    const load = async () => {
-      try {
-        const res = await axios.get(`${import.meta.env.VITE_API}/api/volunteer/profile/me`, { // lấy ra đánh giá của btc
-          // với tôi
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if(res.data?.code === 0){ 
-          setData(res.data?.result);
-        }
-      } catch (rawError) {
-        if (axios.isAxiosError(rawError)) {
-          const ae = rawError;
-          console.error("Axios error snapshot:", JSON.parse(JSON.stringify({
-            message: ae.message,
-            code: ae.code,
-            status: ae.response?.status,
-            data: ae.response?.data,
-            headers: ae.response?.headers,
-            hasRequest: !!ae.request
-          })));
-          if (ae.response?.status === 403) {
-            console.warn("Access denied — token invalid/expired or user lacks role");
-          }
-        } else {
-          console.error("Non-axios error", rawError);
-        }
-      }
-    };
-
-    load();
-  }, [token]);
 
   // Helpers
   const handleBasicInfoChange = (field, value) => {

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Lock,
   Settings,
@@ -17,100 +17,59 @@ import {
   Clock,
   Info
 } from "lucide-react";
+import axios from "axios";
+import { toast, ToastContainer } from "react-toastify";
+import { useAuth } from "../../context/AuthContext";
 
 export default function Account() {
+  const {token} = useAuth();
   const [activeTab, setActiveTab] = useState("info");
   const [isEditing, setIsEditing] = useState(false);
-
-  const [data, setData] = useState({
-    basicInfo: {
-      id: "123",
-      name: "Tổ chức Thanh Niên Việt",
-      description:
-        "Một tổ chức phi lợi nhuận tập trung vào giáo dục, môi trường và cộng đồng.",
-      foundedYear: new Date("2018-05-10").getFullYear(),
-      followers: 15820,
-      ratting: 4.7,
-      totalEvent: 64,
-      avatarUrl:
-        "https://res.cloudinary.com/dqjrrgi4i/image/upload/v1757697564/logo_gzqetp.svg",
-      isVerify: true,
-      slug: ""
-    },
-    contactInfo: {
-      mail: "info@tcyv.org",
-      phone: "+84 912 345 678",
-      websiteUrl: "https://tcyv.org",
-      address: "123 Nguyễn Trãi, Quận 1, TP. Hồ Chí Minh"
-    },
-    services: [
-      {
-        id: "SV001",
-        name: "Premium Account",
-        status: "active",
-        description: "Tài khoản cao cấp với nhiều tính năng nâng cao",
-        rateLimit: "Unlimited",
-        startDate: "2025-01-15",
-        endDate: "2026-01-15"
-      },
-      {
-        id: "SV002",
-        name: "Featured Events Package",
-        status: "active",
-        description: "Gói đẩy sự kiện lên trang chủ trong 3 tháng",
-        rateLimit: "20 sự kiện",
-        startDate: "2025-02-01",
-        endDate: "2025-05-01"
-      },
-      {
-        id: "SV003",
-        name: "Advanced Analytics",
-        status: "expired",
-        description: "Báo cáo và phân tích chuyên sâu",
-        rateLimit: "0",
-        startDate: "2024-06-01",
-        endDate: "2024-12-01"
-      }
-    ],
-    payment: {
-      method: {
-        type: "Credit Card",
-        provider: "Vietcombank",
-        lastFourDigits: "1234"
-      },
-      history: [
-        {
-          id: "PMT001",
-          name: "Thanh toán Premium Account",
-          totalBuild: "2,500,000 VND",
-          payDate: "2025-01-15"
-        },
-        {
-          id: "PMT002",
-          name: "Thanh toán Featured Events Package",
-          totalBuild: "1,200,000 VND",
-          payDate: "2025-02-01"
-        },
-        {
-          id: "PMT003",
-          name: "Thanh toán Advanced Analytics",
-          totalBuild: "800,000 VND",
-          payDate: "2024-06-01"
-        }
-      ]
-    }
-  });
-
-  // snapshot lưu khi bắt đầu edit để revert khi cancel
+  const [data, setData] = useState({ });
   const [originalData, setOriginalData] = useState(null);
-
-  // lỗi ngắn (name, mail, phone, ...)
   const [err, setErr] = useState({});
 
+  const [appPassword, setAppPassword] = useState('');
+  const [password, setPassword] = useState('');
+  const [verifyPassword, setVerifyPassword] = useState('');
   const menuItems = [
     { id: "info", icon: Building2, label: "Thông tin tổ chức", active: true },
     { id: "password", icon: Lock, label: "Đổi mật khẩu", active: false }
   ];
+
+  useEffect(() => {
+    if (!token) return; 
+
+    const load = async () => {
+      try {
+        const res = await axios.get(`${import.meta.env.VITE_API}/api/organizer/profile/me`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if(res.data?.code === 0){ 
+          setData(res.data?.result);
+        }
+      } catch (rawError) {
+        if (axios.isAxiosError(rawError)) {
+          const ae = rawError;
+          console.error("Axios error snapshot:", JSON.parse(JSON.stringify({
+            message: ae.message,
+            code: ae.code,
+            status: ae.response?.status,
+            data: ae.response?.data,
+            headers: ae.response?.headers,
+            hasRequest: !!ae.request
+          })));
+          if (ae.response?.status === 403) {
+            console.warn("Access denied — token invalid/expired or user lacks role");
+          }
+        } else {
+          console.error("Non-axios error", rawError);
+        }
+      }
+    };
+
+    load();
+  }, [token]);
 
   const getShortKey = (col) => {
     if (!col) return col;
@@ -190,9 +149,9 @@ export default function Account() {
   };
 
   const validateAll = () => {
-    const v1 = handleErr("basicInfo.name", data.basicInfo.name);
-    const v2 = handleErr("contactInfo.mail", data.contactInfo.mail);
-    const v3 = handleErr("contactInfo.phone", data.contactInfo.phone);
+    const v1 = handleErr("basicInfo.name", data?.basicInfo?.name);
+    const v2 = handleErr("contactInfo.mail", data?.contactInfo?.mail);
+    const v3 = handleErr("contactInfo.phone", data?.contactInfo?.phone);
     return v1 && v2 && v3;
   };
 
@@ -248,6 +207,32 @@ export default function Account() {
     }
   };
 
+
+  const handleChange = async () => {
+    try {
+      if (password !== verifyPassword) {
+        toast.warning("Mật khẩu không trùng khớp kiểm tra lại!");
+        return;
+      }
+      if(password.length < 6){
+        toast.warning("Mật khẩu phải có nhiều hơn 6 kí tự!");
+        return;
+      }
+
+      const loader = await axios.post(`${import.meta.env.VITE_API}/api/organizer/change/password`, {
+        appPassword: appPassword, 
+        password: password
+      }, {headers: {Authorization: `Bearer ${token}`}});
+      if(loader.data.result) {
+        toast.success("Thành công");
+      }else {
+        toast.error("Thất bại");
+      }
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
   const renderContent = () => {
     switch (activeTab) {
       case "info":
@@ -263,6 +248,29 @@ export default function Account() {
                     Thông tin nhận diện tổ chức.
                   </p>
                 </div>
+                {!isEditing ? (
+                    <button
+                      onClick={startEdit}
+                      className="px-4 py-2 bg-yellow-100 text-yellow-800 rounded-lg text-sm hover:bg-yellow-200"
+                    >
+                      Chỉnh sửa hồ sơ
+                    </button>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={cancelEdit}
+                        className="px-4 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-50"
+                      >
+                        Hủy
+                      </button>
+                      <button
+                        onClick={saveEdit}
+                        className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700"
+                      >
+                        Lưu
+                      </button>
+                    </div>
+                  )}
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
@@ -272,7 +280,7 @@ export default function Account() {
                   </label>
                   <input
                     type="text"
-                    value={data.basicInfo.name}
+                    value={data?.basicInfo?.name}
                     readOnly={!isEditing}
                     onChange={(e) => onFieldChange("basicInfo.name", e.target.value)}
                     className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 ${
@@ -292,7 +300,7 @@ export default function Account() {
                   </label>
                   <input
                     type="text"
-                    value={data.basicInfo.id}
+                    value={data?.basicInfo?.id}
                     className="w-full p-3 border border-gray-300 rounded-lg bg-gray-50"
                     readOnly
                   />
@@ -304,17 +312,17 @@ export default function Account() {
                   </label>
                   <span
                     className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
-                      data.basicInfo.isVerify
+                      data?.basicInfo?.isVerify
                         ? "bg-green-100 text-green-800"
                         : "bg-yellow-100 text-yellow-800"
                     }`}
                   >
-                    {data.basicInfo.isVerify ? (
+                    {data?.basicInfo?.isVerify ? (
                       <Activity className="w-4 h-4 mr-1" />
                     ) : (
                       <Clock className="w-4 h-4 mr-1" />
                     )}
-                    {data.basicInfo.isVerify ? "Đã xác thực" : "Chưa xác thực"}
+                    {data?.basicInfo?.isVerify ? "Đã xác thực" : "Chưa xác thực"}
                   </span>
                 </div>
               </div>
@@ -332,7 +340,7 @@ export default function Account() {
                   </label>
                   <input
                     type="email"
-                    value={data.contactInfo.mail}
+                    value={data?.contactInfo?.mail}
                     readOnly={!isEditing}
                     onChange={(e) => onFieldChange("contactInfo.mail", e.target.value)}
                     className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 ${
@@ -353,7 +361,7 @@ export default function Account() {
                   </label>
                   <input
                     type="tel"
-                    value={data.contactInfo.phone}
+                    value={data?.contactInfo?.phone}
                     readOnly={!isEditing}
                     onChange={(e) =>
                       onFieldChange("contactInfo.phone", e.target.value)
@@ -375,7 +383,7 @@ export default function Account() {
                     Địa chỉ
                   </label>
                   <textarea
-                    value={data.contactInfo.address}
+                    value={data?.contactInfo?.address}
                     readOnly={!isEditing}
                     onChange={(e) =>
                       onFieldChange("contactInfo.address", e.target.value)
@@ -404,6 +412,8 @@ export default function Account() {
                 </label>
                 <input
                   type="password"
+                  value={appPassword}
+                  onChange={(e) => setAppPassword(e.target.value)}
                   className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                 />
               </div>
@@ -413,6 +423,8 @@ export default function Account() {
                 </label>
                 <input
                   type="password"
+                  value={password}
+                  onChange={(e)=> setPassword(e.target.value)}
                   className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                 />
               </div>
@@ -422,10 +434,12 @@ export default function Account() {
                 </label>
                 <input
                   type="password"
+                  value={verifyPassword}
+                  onChange={(e)=> setVerifyPassword(e.target.value)}
                   className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                 />
               </div>
-              <button className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+              <button onClick={()=> handleChange()} className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
                 Cập nhật mật khẩu
               </button>
             </div>
@@ -447,58 +461,31 @@ export default function Account() {
             </h1>
             <p className="text-gray-600 mt-2">Quản lý thông tin tổ chức</p>
           </div>
-
-          {!isEditing ? (
-            <button
-              onClick={startEdit}
-              className="px-4 py-2 bg-yellow-100 text-yellow-800 rounded-lg text-sm hover:bg-yellow-200"
-            >
-              Chỉnh sửa hồ sơ
-            </button>
-          ) : (
-            <div className="flex items-center gap-2">
-              <button
-                onClick={cancelEdit}
-                className="px-4 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-50"
-              >
-                Hủy
-              </button>
-              <button
-                onClick={saveEdit}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700"
-              >
-                Lưu
-              </button>
-            </div>
-          )}
         </div>
 
-        <div className="flex flex-col lg:flex-row gap-8">
-          <div className="lg:w-64 flex-shrink-0">
-            <div className="bg-white rounded-lg shadow-sm border p-4">
-              <nav className="space-y-2">
-                {menuItems.map((item) => {
-                  const IconComponent = item.icon;
-                  return (
-                    <button
-                      key={item.id}
-                      onClick={() => setActiveTab(item.id)}
-                      className={`w-full flex items-center px-4 py-3 text-left rounded-lg transition-colors ${
-                        activeTab === item.id
-                          ? "bg-blue-100 text-blue-700 border border-blue-200"
-                          : "hover:bg-gray-100 text-gray-700"
-                      }`}
-                    >
-                      <IconComponent className="w-5 h-5 mr-3" />
-                      {item.label}
-                    </button>
-                  );
-                })}
-              </nav>
-            </div>
+        <div className="flex flex-col gap-8">
+          <div className="bg-white rounded-lg shadow-sm border p-4">
+            <nav className="flex gap-2">
+              {menuItems.map((item) => {
+                const IconComponent = item.icon;
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => setActiveTab(item.id)}
+                    className={`w-full flex items-center px-4 py-3 text-left rounded-lg transition-colors ${
+                      activeTab === item.id
+                        ? "bg-blue-100 text-blue-700 border border-blue-200"
+                        : "hover:bg-gray-100 text-gray-700"
+                    }`}>
+                    <IconComponent className="w-5 h-5 mr-3" />
+                    {item.label}
+                  </button>
+                );
+              })}
+            </nav>
           </div>
-
           <div className="flex-1">{renderContent()}</div>
+          <ToastContainer />
         </div>
       </div>
     </div>

@@ -105,7 +105,7 @@ const EventManages = () => {
       setLoading(true);
       setError(null);
       try {
-        const res = await axios.get(`${import.meta.env.VITE_API}/api/btc/events`, {
+        const res = await axios.get(`${import.meta.env.VITE_API}/api/organizer/events`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         console.log(res.data);

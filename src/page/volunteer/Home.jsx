@@ -1,8 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Calendar, Users, Heart, ArrowRight, MapPin, Clock, Search, TrendingUp, Award, MessageCircle } from 'lucide-react';
-
+import { Link } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext'; 
 export default function Home() {
+  const { token } = useAuth();
   const [scrollY, setScrollY] = useState(0);
+
   useEffect(() => {
     const handleScroll = () => setScrollY(window.scrollY);
     window.addEventListener('scroll', handleScroll);
@@ -84,6 +87,8 @@ export default function Home() {
       // 6 bài viết từ api bài viết 
     ]
   }
+
+  const handleRegister = (id) => {}
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white">
       {/* Hero Section */}
@@ -117,13 +122,13 @@ export default function Home() {
             </p>
             
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-8">
-              <button className="group bg-white text-blue-600 px-8 py-4 rounded-xl font-semibold text-lg shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-300 flex items-center gap-2">
+              <Link to='/' className="group bg-white text-blue-600 px-8 py-4 rounded-xl font-semibold text-lg shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-300 flex items-center gap-2">
                 Tham gia ngay
                 <ArrowRight className="group-hover:translate-x-1 transition-transform" size={20} />
-              </button>
-              <button className="bg-transparent border-2 border-white px-8 py-4 rounded-xl font-semibold text-lg hover:bg-white hover:text-blue-600 transition-all duration-300">
+              </Link>
+              <Link to='/events' className="bg-transparent border-2 border-white px-8 py-4 rounded-xl font-semibold text-lg hover:bg-white hover:text-blue-600 transition-all duration-300">
                 Khám phá sự kiện
-              </button>
+              </Link>
             </div>
 
             {/* Search Bar */}
@@ -177,10 +182,10 @@ export default function Home() {
             <h2 className="text-4xl font-bold text-gray-800 mb-2">Sự kiện nổi bật</h2>
             <p className="text-gray-600">Những cơ hội tình nguyện đang chờ bạn tham gia</p>
           </div>
-          <button className="hidden md:flex items-center gap-2 text-blue-600 font-semibold hover:gap-3 transition-all">
+          <Link to='/events?q=all' className="hidden md:flex items-center gap-2 text-blue-600 font-semibold hover:gap-3 transition-all">
             Xem tất cả
             <ArrowRight size={20} />
-          </button>
+          </Link>
         </div>
 
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -195,18 +200,18 @@ export default function Home() {
                   alt={event.title}
                   className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                 />
-                <div className="absolute top-4 left-4 bg-white px-3 py-1 rounded-full text-sm font-semibold text-blue-600">
+                <Link to={`/events?c=${event.category}`} className="absolute top-4 left-4 bg-white px-3 py-1 rounded-full text-sm font-semibold text-blue-600">
                   {event.category}
-                </div>
+                </Link>
                 <div className="absolute top-4 right-4 bg-red-500 text-white px-3 py-1 rounded-full text-sm font-semibold">
                   Còn {event.slotsLeft} chỗ
                 </div>
               </div>
               
               <div className="p-6">
-                <h3 className="text-xl font-bold text-gray-800 mb-3 group-hover:text-blue-600 transition-colors">
+                <Link to={`/events/${event?.slug}`} className="text-xl font-bold text-gray-800 mb-3 group-hover:text-blue-600 transition-colors">
                   {event.title}
-                </h3>
+                </Link>
                 
                 <div className="space-y-2 mb-4">
                   <div className="flex items-center gap-2 text-gray-600">
@@ -223,7 +228,7 @@ export default function Home() {
                   </div>
                 </div>
 
-                <button className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-3 rounded-xl font-semibold hover:from-blue-700 hover:to-indigo-700 transition-all duration-300 flex items-center justify-center gap-2">
+                <button onClick={()=> handleRegister(event.id)} className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-3 rounded-xl font-semibold hover:from-blue-700 hover:to-indigo-700 transition-all duration-300 flex items-center justify-center gap-2">
                   Đăng ký ngay
                   <ArrowRight size={18} />
                 </button>
@@ -282,15 +287,16 @@ export default function Home() {
             <h2 className="text-4xl font-bold text-gray-800 mb-2">Cộng đồng chia sẻ</h2>
             <p className="text-gray-600">Câu chuyện và kinh nghiệm từ các tình nguyện viên</p>
           </div>
-          <button className="hidden md:flex items-center gap-2 text-blue-600 font-semibold hover:gap-3 transition-all">
+          <Link to='/community' className="hidden md:flex items-center gap-2 text-blue-600 font-semibold hover:gap-3 transition-all">
             Xem thêm
             <ArrowRight size={20} />
-          </button>
+          </Link>
         </div>
 
         <div className="grid md:grid-cols-3 gap-6">
           {communities.map((post, index) => (
-            <div 
+            <Link 
+              to={`/community/${post?.slug}`} 
               key={index}
               className="bg-white rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden hover:-translate-y-1 cursor-pointer"
             >
@@ -313,34 +319,36 @@ export default function Home() {
                   </div>
                 </div>
               </div>
-            </div>
+            </Link>
           ))}
         </div>
       </section>
 
       {/* CTA Section */}
-      <section className="container mx-auto px-4 mb-20">
-        <div className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 rounded-3xl overflow-hidden shadow-2xl">
-          <div className="flex flex-col md:flex-row items-center">
-            <div className="flex-1 p-12 text-white">
-              <h2 className="text-4xl font-bold mb-4">Sẵn sàng tạo nên sự khác biệt?</h2>
-              <p className="text-xl mb-8 text-blue-100">
-                Tham gia cộng đồng tình nguyện viên hôm nay và bắt đầu hành trình ý nghĩa của bạn.
-              </p>
-              <button className="bg-white text-blue-600 px-8 py-4 rounded-xl font-bold text-lg hover:bg-blue-50 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105">
-                Đăng ký tài khoản miễn phí
-              </button>
-            </div>
-            <div className="flex-1 relative h-80 md:h-96">
-              <img 
-                src="https://images.unsplash.com/photo-1559027615-cd4628902d4a?w=800&q=80"
-                alt="Join volunteers"
-                className="w-full h-full object-cover"
-              />
+      {!token && 
+        <section className="container mx-auto px-4 mb-20">
+          <div className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 rounded-3xl overflow-hidden shadow-2xl">
+            <div className="flex flex-col md:flex-row items-center">
+              <div className="flex-1 p-12 text-white">
+                <h2 className="text-4xl font-bold mb-4">Sẵn sàng tạo nên sự khác biệt?</h2>
+                <p className="text-xl mb-8 text-blue-100">
+                  Tham gia cộng đồng tình nguyện viên hôm nay và bắt đầu hành trình ý nghĩa của bạn.
+                </p>
+                <button className="bg-white text-blue-600 px-8 py-4 rounded-xl font-bold text-lg hover:bg-blue-50 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105">
+                  Đăng ký tài khoản miễn phí
+                </button>
+              </div>
+              <div className="flex-1 relative h-80 md:h-96">
+                <img 
+                  src="https://images.unsplash.com/photo-1559027615-cd4628902d4a?w=800&q=80"
+                  alt="Join volunteers"
+                  className="w-full h-full object-cover"
+                />
+              </div>
             </div>
           </div>
-        </div>
-      </section>
+        </section>      
+      }
     </div>
   );
 }

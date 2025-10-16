@@ -10,6 +10,7 @@ import BlogPostsWidget from "../../components/user/home/BlogPostsWidget";
 import FAQsWidget from "../../components/user/home/FAQsWidget";
 import FilterPanel from "../../components/common/FilterPanel";
 
+
 const Pagination = ({ totalPages, currentPage, onPageChange }) => {
   if (totalPages <= 1) return null;
 
