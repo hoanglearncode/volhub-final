@@ -12,26 +12,49 @@ export default function LoginPage() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [isRead, setIsRead] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const loginWithFacebook = async () => {
-    try {
-      const data = await axios.get(`${import.meta.env.VITE_API}/oauth2/authorization/facebook`);
-      console.log(data);
-    } catch (error) {
-      console.log(error);
-    }
-  }
+  const loginWithProvider = async (provider) => {
+    setIsLoading(true);
+    const endpoint = `${import.meta.env.VITE_API}/oauth2/authorization/${provider}`;
 
-  const loginWithGoogle = async () => {
     try {
-      const data = await axios.get(`${import.meta.env.VITE_API}/oauth2/authorization/google`)
-      console.log(data)
+      // Thử gọi để lấy redirect URL nếu backend trả JSON hoặc Location header.
+      // Note: một số backend trả 302 trực tiếp (thì axios có thể follow). 
+      // Thử đọc các chỗ có thể chứa URL và fallback sang window.location.
+      const res = await axios.get(endpoint, { validateStatus: () => true, maxRedirects: 0 })
+        .catch(err => err.response || null);
+
+      // 1) Nếu backend trả Location header (redirect)
+      const locationHeader = res?.headers?.location;
+      // 2) Nếu backend trả JSON { url: "..."} hay {redirectUrl: "..."}
+      const bodyUrl = res?.data?.url || res?.data?.redirectUrl || res?.data?.redirect_uri;
+      // 3) axios.response.request.responseURL (nếu follow redirect)
+      const responseURL = res?.request?.responseURL;
+
+      const redirectUrl = locationHeader || bodyUrl || responseURL;
+
+      if (redirectUrl) {
+        // điều hướng trình duyệt tới URL của provider (hoặc URL backend trả)
+        window.location.href = redirectUrl;
+      } else {
+        // fallback: chuyển trực tiếp tới endpoint (backend sẽ 302 tới provider)
+        window.location.href = endpoint;
+      }
     } catch (error) {
-      console.log(error);
+      console.error("OAuth login error:", error);
+      // fallback an toàn
+      window.location.href = endpoint;
+    } finally {
+      setIsLoading(false);
     }
-  }
+  };
+
+  const loginWithGoogle = () => loginWithProvider("google");
+  const loginWithFacebook = () => loginWithProvider("facebook");
 
   const handleSubmit = async () => {
+    setIsLoading(true);
     try {
       const res = await axios.post(`${import.meta.env.VITE_API}/auth/token`, {
         email: username.toLowerCase(),
@@ -53,6 +76,8 @@ export default function LoginPage() {
       }
     } catch (error) {
       toast.error(`Lỗi: ${error?.response?.data?.message || error.message}`);
+    }finally {
+      setIsLoading(false);
     }
   };
 
@@ -214,14 +239,22 @@ export default function LoginPage() {
                 </Link>
               </div>
 
-              {/* Submit Button */}
-              <button
-                onClick={()=> {handleSubmit()}}
-                className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold py-3 px-4 rounded-xl lg:rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all duration-200 flex items-center justify-center gap-2 shadow-lg hover:shadow-xl"
-              >
-                Đăng nhập
-                <ArrowRight size={18} />
-              </button>
+              {isLoading ? (
+                <button
+                  className="w-full bg-gradient-to-r from-blue-400 to-purple-400 bg-blur-md text-white font-semibold py-3 px-4 rounded-xl lg:rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all duration-200 flex items-center justify-center gap-2 shadow-lg hover:shadow-xl"
+                >
+                  Đang đăng nhập
+                  <div className="w-5 h-5 border-t-2 animate-spin ml-2 border-white rounded-full"></div>
+                </button>
+              ) : (
+                <button
+                  onClick={()=> {handleSubmit()}}
+                  className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold py-3 px-4 rounded-xl lg:rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all duration-200 flex items-center justify-center gap-2 shadow-lg hover:shadow-xl"
+                >
+                  Đăng nhập
+                  <ArrowRight size={18} />
+                </button>
+              )}
             </div>
 
             {/* Divider */}
