@@ -94,7 +94,7 @@ export default function EventAnalyticsMobileSlim(){
   const closeDrawer = () => setDrawer({ open: false, item: null });
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4 sm:p-6">
+    <div className="min-h-screen bg-gray-50 p-4 sm:p-6 mb-18">
       <div className="max-w-xl mx-auto space-y-4">
         <div className="flex items-center justify-between">
           <div>
