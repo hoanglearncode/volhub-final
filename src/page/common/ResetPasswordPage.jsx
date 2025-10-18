@@ -45,8 +45,8 @@ export default function ResetPasswordPage() {
     try {
       const res = await axios.post(`${import.meta.env.VITE_API}/api/users/change/forget-password`, {
         email: token,
-        appPassword: appPassword,
         password: password,
+        appPassword: appPassword,
       });
       console.log(res);
       if (res.data?.code === 0 && res.data?.result) {
