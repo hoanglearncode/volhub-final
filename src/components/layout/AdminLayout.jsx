@@ -431,7 +431,7 @@ function AdminLayout() {
         </div>
       </header>
 
-      {/* {isMobile ? (
+      {isMobile ? (
         <div className="block pt-16 min-h-screen">
           <div className="flex flex-col items-center justify-center h-[calc(100vh-3.5rem)] px-6 text-center bg-gradient-to-br from-red-50 to-orange-50">
             <div className="mb-8 relative">
@@ -456,7 +456,7 @@ function AdminLayout() {
             </div>
           </div>
         </div>        
-      ) : ( */}
+      ) : (
         <div className="flex pt-14">
           <aside className={`fixed left-0 top-14 bottom-0 bg-white border-r border-gray-200 transition-all duration-300 z-40 ${
             isCollapsed ? "w-16" : "w-64"
@@ -556,7 +556,7 @@ function AdminLayout() {
             </div>
           </main>
         </div>
-      {/* )} */}
+      )}
 
 
 

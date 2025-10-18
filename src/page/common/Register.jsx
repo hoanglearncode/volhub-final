@@ -131,50 +131,23 @@ export default function Register() {
       };
 
       const response = await axios.post(`${import.meta.env.VITE_API}/api/users/create`, requestData);
-
-      // Xác định kiểu trả về
-      const ct = (response.headers && response.headers['content-type']) || '';
-      if (!ct.includes('application/json')) {
-        // Unexpected: server trả HTML hoặc text -> không xử lý như JSON
-        console.error('Unexpected response content-type:', ct, response.data);
-        toast.error('Máy chủ trả về nội dung không hợp lệ. Liên hệ admin hoặc thử lại sau.');
-        setIsLoading(false);
-        return;
-      }
-
-      // Bảo đảm response.data là object JSON
-      const json = response.data;
-
-      if (json?.result?.success) {
+      if (response?.data?.result) {
         try {
           const res = await axios.post(`${import.meta.env.VITE_API}/auth/token`, {
             email: formData.email,
             password: formData.password
-          }, { headers: { Accept: 'application/json' }, timeout: 10000 });
-
-          const tokenCt = (res.headers && res.headers['content-type']) || '';
-          if (!tokenCt.includes('application/json')) {
-            console.error('Token endpoint returned non-json', res);
-            toast.error('Lỗi nhận token từ server. Vui lòng thử lại.');
-            setIsLoading(false);
-            return;
-          }
+          }, { headers: { Accept: 'application/json' }, timeout: 1000 });
 
           const tokenData = res.data;
-          if (tokenData?.result?.authenticated && tokenData?.result?.token) {
+          if (tokenData?.result?.authenticated && tokenData.code == 0) {
             loginWithToken(tokenData.result.token);
-
-            // tạo OTP, kèm Authorization
             try {
               await axios.post(`${import.meta.env.VITE_API}/api/otp/create`, {}, {
                 headers: {
                   Authorization: `Bearer ${tokenData.result.token}`,
-                  Accept: 'application/json'
                 }
               });
             } catch (errOtp) {
-              console.warn('OTP create failed', errOtp);
-              // không block flow chính — chỉ cảnh báo
             }
 
             navigate('/auth/verify');

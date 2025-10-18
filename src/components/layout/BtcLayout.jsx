@@ -161,7 +161,7 @@ function BtcLayout() {
   useEffect(()=> {
     const loaded =  async () => {
       try {
-        const res = await axios.get(`${import.meta.env.VITE_API}/api/btc/profile/me`,  {
+        const res = await axios.get(`${import.meta.env.VITE_API}/api/organizer/profile/me`,  {
           headers: {
             Authorization: `Bearer ${token}`,
           }

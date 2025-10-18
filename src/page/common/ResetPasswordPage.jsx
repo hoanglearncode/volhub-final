@@ -20,7 +20,6 @@ export default function ResetPasswordPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
-  console.log(token)
   const validatePassword = (pw) => {
     if (!pw || pw.length < 8) return "Mật khẩu phải có ít nhất 8 ký tự.";
     if (!/[0-9]/.test(pw)) return "Mật khẩu nên chứa ít nhất 1 chữ số.";
@@ -46,8 +45,8 @@ export default function ResetPasswordPage() {
     try {
       const res = await axios.post(`${import.meta.env.VITE_API}/api/users/change/forget-password`, {
         email: token,
+        appPassword: appPassword,
         password: password,
-        appPassword: appPassword
       });
       console.log(res);
       if (res.data?.code === 0 && res.data?.result) {
