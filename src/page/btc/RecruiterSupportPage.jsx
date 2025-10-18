@@ -1,300 +1,233 @@
-import React, { useState } from 'react';
-import { ChevronDown, ChevronRight, Search, User, FileText, Settings, BarChart3, MessageSquare, Phone, Mail, HelpCircle, Book, Video, Download } from 'lucide-react';
+import React, { useState, useMemo } from 'react';
+import {
+  ChevronDown,
+  ChevronRight,
+  Search,
+  User,
+  FileText,
+  Settings,
+  BarChart3,
+  MessageSquare,
+  Phone,
+  Mail,
+  HelpCircle,
+  Book,
+  Video,
+  Download,
+  Globe
+} from 'lucide-react';
 
-const RecruiterSupportPage = () => {
+// RecruiterSupportMobile.jsx
+// Mobile-first support center UI for recruiters
+// - Focused on presentation and touch-friendly layout
+// - Removes any non-UI logic (no network calls, no console logs)
+// - Accepts data via props for easy integration
+
+export default function RecruiterSupportMobile({
+  initialNavigation = null,
+  initialGuides = null,
+  initialFAQ = null,
+  hotline = '1900-1234'
+}) {
   const [searchTerm, setSearchTerm] = useState('');
   const [expandedFAQ, setExpandedFAQ] = useState(null);
   const [activeSection, setActiveSection] = useState('getting-started');
 
-  const navigationItems = [
+  const navigationItems = initialNavigation || [
     { id: 'getting-started', label: 'Bắt Đầu', icon: Book },
-    { id: 'job-posting', label: 'Đăng Tin Tuyển Dụng', icon: FileText },
-    { id: 'candidate-management', label: 'Quản Lý Ứng Viên', icon: User },
-    { id: 'analytics', label: 'Báo Cáo & Phân Tích', icon: BarChart3 },
-    { id: 'account-settings', label: 'Cài Đặt Tài Khoản', icon: Settings },
+    { id: 'job-posting', label: 'Đăng Tin', icon: FileText },
+    { id: 'candidate-management', label: 'Ứng Viên', icon: User },
+    { id: 'analytics', label: 'Báo Cáo', icon: BarChart3 },
+    { id: 'account-settings', label: 'Tài Khoản', icon: Settings }
   ];
 
-  const faqItems = [
-    {
-      question: 'Làm thế nào để đăng tin tuyển dụng mới?',
-      answer: 'Để đăng tin tuyển dụng mới, hãy vào mục "Đăng Tin" trên thanh điều hướng, điền đầy đủ thông tin công việc, yêu cầu ứng viên và nhấn "Đăng Tin". Tin của bạn sẽ được duyệt trong vòng 2-4 giờ.'
-    },
-    {
-      question: 'Tôi có thể xem được bao nhiêu hồ sơ ứng viên?',
-      answer: 'Tùy thuộc vào gói dịch vụ bạn đăng ký. Gói cơ bản cho phép xem 50 hồ sơ/tháng, gói chuyên nghiệp 200 hồ sơ/tháng và gói doanh nghiệp không giới hạn.'
-    },
-    {
-      question: 'Làm sao để tìm kiếm ứng viên phù hợp?',
-      answer: 'Sử dụng bộ lọc tìm kiếm nâng cao với các tiêu chí như kinh nghiệm, kỹ năng, địa điểm, mức lương mong muốn. Bạn cũng có thể lưu các tìm kiếm thường dùng để sử dụng sau.'
-    },
-    {
-      question: 'Chi phí đăng tin tuyển dụng là bao nhiêu?',
-      answer: 'Tin tuyển dụng cơ bản: 500.000 VND/30 ngày. Tin VIP: 1.200.000 VND/30 ngày. Tin Hot: 2.000.000 VND/30 ngày. Có nhiều gói combo ưu đãi cho nhiều tin đăng.'
-    },
-    {
-      question: 'Tôi có thể chỉnh sửa tin đã đăng không?',
-      answer: 'Có, bạn có thể chỉnh sửa tin tuyển dụng bất kỳ lúc nào trong thời gian tin còn hiệu lực. Vào mục "Quản Lý Tin Đăng" và chọn "Chỉnh Sửa".'
-    }
-  ];
-
-  const guides = {
+  const guides = initialGuides || {
     'getting-started': {
       title: 'Hướng Dẫn Bắt Đầu',
       content: [
-        {
-          step: 'Bước 1: Tạo Tài Khoản Nhà Tuyển Dụng',
-          details: 'Đăng ký tài khoản với email công ty, xác thực thông tin doanh nghiệp và tải lên giấy phép kinh doanh.'
-        },
-        {
-          step: 'Bước 2: Thiết Lập Hồ Sơ Công Ty',
-          details: 'Hoàn thiện thông tin công ty, thêm logo, mô tả về công ty và văn hóa làm việc để thu hút ứng viên.'
-        },
-        {
-          step: 'Bước 3: Nạp Credit Hoặc Chọn Gói Dịch Vụ',
-          details: 'Chọn gói dịch vụ phù hợp với nhu cầu tuyển dụng của công ty bạn.'
-        },
-        {
-          step: 'Bước 4: Đăng Tin Tuyển Dụng Đầu Tiên',
-          details: 'Sử dụng mẫu có sẵn hoặc tự tạo tin tuyển dụng với đầy đủ thông tin về vị trí và yêu cầu.'
-        }
+        { step: 'Tạo tài khoản nhà tuyển dụng', details: 'Đăng ký bằng email công ty và hoàn thiện hồ sơ doanh nghiệp.' },
+        { step: 'Thiết lập hồ sơ công ty', details: 'Thêm logo, mô tả công ty, và địa chỉ liên hệ.' },
+        { step: 'Chọn gói dịch vụ', details: 'Lựa chọn gói phù hợp để bắt đầu tuyển dụng.' },
+        { step: 'Đăng tin tuyển dụng', details: 'Sử dụng mẫu hoặc tự tạo tin mới, điền thông tin và đăng.' }
       ]
     },
     'job-posting': {
       title: 'Đăng Tin Tuyển Dụng',
       content: [
-        {
-          step: 'Tạo Tiêu Đề Hấp Dẫn',
-          details: 'Viết tiêu đề rõ ràng, cụ thể về vị trí tuyển dụng. VD: "Tuyển Lập Trình Viên Java - Lương 15-25 triệu - Làm Việc Hybrid"'
-        },
-        {
-          step: 'Mô Tả Công Việc Chi Tiết',
-          details: 'Bao gồm trách nhiệm chính, yêu cầu kỹ năng, kinh nghiệm, quyền lợi và môi trường làm việc.'
-        },
-        {
-          step: 'Thiết Lập Câu Hỏi Sàng Lọc',
-          details: 'Tạo các câu hỏi để lọc ứng viên phù hợp ngay từ bước đầu, tiết kiệm thời gian review hồ sơ.'
-        },
-        {
-          step: 'Chọn Gói Đăng Tin',
-          details: 'Tin thường, tin VIP có logo nổi bật, tin Hot xuất hiện đầu danh sách tìm kiếm.'
-        }
+        { step: 'Tạo tiêu đề hấp dẫn', details: 'Tiêu đề rõ ràng, nêu vị trí và mức lương (nếu có).' },
+        { step: 'Mô tả chi tiết', details: 'Nhiệm vụ, yêu cầu, quyền lợi, địa điểm.' },
+        { step: 'Thiết lập câu hỏi sàng lọc', details: 'Thêm câu hỏi để lọc hồ sơ phù hợp.' }
       ]
     },
     'candidate-management': {
       title: 'Quản Lý Ứng Viên',
       content: [
-        {
-          step: 'Xem và Lọc Hồ Sơ',
-          details: 'Sử dụng bộ lọc theo kỹ năng, kinh nghiệm, học vấn để tìm ứng viên phù hợp nhất.'
-        },
-        {
-          step: 'Gửi Lời Mời Ứng Tuyển',
-          details: 'Chủ động tiếp cận ứng viên tiềm năng bằng cách gửi lời mời ứng tuyển cá nhân hóa.'
-        },
-        {
-          step: 'Quản Lý Pipeline Tuyển Dụng',
-          details: 'Theo dõi trạng thái ứng viên: Mới ứng tuyển → Đã xem → Phù hợp → Phỏng vấn → Trúng tuyển/Loại'
-        },
-        {
-          step: 'Trao Đổi với Ứng Viên',
-          details: 'Sử dụng hệ thống tin nhắn tích hợp để liên lạc, hẹn lịch phỏng vấn và thông báo kết quả.'
-        }
+        { step: 'Xem & Lọc hồ sơ', details: 'Sử dụng bộ lọc kỹ năng, kinh nghiệm và vùng miền.' },
+        { step: 'Quản lý pipeline', details: 'Theo dõi trạng thái từ nộp -> phỏng vấn -> trúng tuyển.' }
       ]
     },
     'analytics': {
       title: 'Báo Cáo & Phân Tích',
       content: [
-        {
-          step: 'Theo Dõi Hiệu Suất Tin Đăng',
-          details: 'Xem số lượt xem, ứng tuyển, tỷ lệ chuyển đổi của từng tin tuyển dụng.'
-        },
-        {
-          step: 'Phân Tích Nguồn Ứng Viên',
-          details: 'Biết ứng viên đến từ kênh nào: tìm kiếm trực tiếp, mạng xã hội, giới thiệu...'
-        },
-        {
-          step: 'Báo Cáo Thời Gian Tuyển Dụng',
-          details: 'Theo dõi thời gian từ lúc đăng tin đến khi tìm được ứng viên phù hợp.'
-        },
-        {
-          step: 'So Sánh Hiệu Quả Các Gói Tin',
-          details: 'Đánh giá ROI của tin thường, VIP, Hot để tối ưu hóa ngân sách tuyển dụng.'
-        }
+        { step: 'Hiệu suất tin đăng', details: 'Xem lượt xem, lượt nộp, tỷ lệ chuyển đổi.' },
+        { step: 'Nguồn ứng viên', details: 'Biết ứng viên đến từ kênh nào để tối ưu ngân sách.' }
       ]
     },
     'account-settings': {
       title: 'Cài Đặt Tài Khoản',
       content: [
-        {
-          step: 'Quản Lý Thông Tin Công Ty',
-          details: 'Cập nhật thông tin liên hệ, logo, địa chỉ các chi nhánh và thông tin pháp lý.'
-        },
-        {
-          step: 'Thiết Lập Quyền Người Dùng',
-          details: 'Thêm thành viên team HR, phân quyền xem hồ sơ, đăng tin, quản lý tài khoản.'
-        },
-        {
-          step: 'Cài Đặt Thông Báo',
-          details: 'Tùy chỉnh nhận thông báo qua email/SMS khi có ứng viên mới, tin sắp hết hạn.'
-        },
-        {
-          step: 'Quản Lý Gói Dịch Vụ',
-          details: 'Xem lịch sử thanh toán, gia hạn gói, nâng cấp hoặc hạ cấp dịch vụ.'
-        }
+        { step: 'Thông tin công ty', details: 'Cập nhật liên hệ, chi nhánh, giấy tờ.' },
+        { step: 'Quyền truy cập', details: 'Thêm thành viên và phân quyền.' }
       ]
     }
   };
 
-  const filteredFAQ = faqItems.filter(item =>
-    item.question.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    item.answer.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const faqItems = initialFAQ || [
+    { question: 'Làm thế nào để đăng tin tuyển dụng mới?', answer: 'Vào mục Đăng Tin, điền thông tin công việc và gửi. Tin sẽ được duyệt trong 2-4 giờ.' },
+    { question: 'Tôi có thể xem được bao nhiêu hồ sơ?', answer: 'Số hồ sơ hiển thị tùy gói dịch vụ; kiểm tra phần Gói Dịch Vụ để biết chi tiết.' },
+    { question: 'Chi phí đăng tin là bao nhiêu?', answer: 'Có nhiều gói: Cơ bản, VIP và Hot. Xem chi tiết ở trang gói dịch vụ.' }
+  ];
+
+  // Lightweight FAQ search
+  const filteredFAQ = useMemo(() => {
+    const q = (searchTerm || '').trim().toLowerCase();
+    if (!q) return faqItems;
+    return faqItems.filter(f => f.question.toLowerCase().includes(q) || f.answer.toLowerCase().includes(q));
+  }, [faqItems, searchTerm]);
+
+  const toggleFAQ = (i) => setExpandedFAQ(expandedFAQ === i ? null : i);
+  const changeSection = (id) => setActiveSection(id);
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white mb-18">
       {/* Header */}
-      <header className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-4">
-            <div className="flex items-center space-x-3">
-              <div className="bg-blue-600 text-white p-2 rounded-lg">
-                <HelpCircle className="w-6 h-6" />
-              </div>
-              <div>
-                <h1 className="text-xl font-bold text-gray-900">Trung Tâm Hỗ Trợ</h1>
-                <p className="text-sm text-gray-600">Dành cho Nhà Tuyển Dụng</p>
-              </div>
+      <header className="sticky top-0 z-30 bg-white/95 backdrop-blur border-b border-gray-100">
+        <div className="max-w-md mx-auto px-4 py-3 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="bg-blue-600 p-2 rounded-lg text-white">
+              <HelpCircle className="w-5 h-5" />
             </div>
-            <div className="flex items-center space-x-4">
-              <button className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
-                <Phone className="w-4 h-4" />
-                <span>Hotline: 1900-1234</span>
-              </button>
+            <div>
+              <h1 className="text-base font-semibold text-gray-900">Trung tâm Hỗ trợ</h1>
+              <div className="text-xs text-gray-500">Dành cho nhà tuyển dụng</div>
             </div>
+          </div>
+          <button className="flex items-center gap-2 px-3 py-2 bg-green-600 text-white rounded-lg text-xs">
+            <Phone className="w-4 h-4" />
+            <span className="font-medium">{hotline}</span>
+          </button>
+        </div>
+
+        {/* Search */}
+        <div className="max-w-md mx-auto px-4 pb-3">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+            <input
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="Tìm kiếm hướng dẫn hoặc câu hỏi..."
+              className="w-full pl-10 pr-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500"
+            />
           </div>
         </div>
       </header>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="flex flex-col gap-8">
-          {/* Sidebar */}
-          <div className="w-full">
-            <div className="bg-white rounded-lg shadow-sm p-6 sticky top-8">
-              <h3 className="font-semibold text-gray-900 mb-4">Danh Mục Hướng Dẫn</h3>
-              <nav className="space-x-2 flex">
-                {navigationItems.map((item) => {
-                  const Icon = item.icon;
-                  return (
-                    <button
-                      key={item.id}
-                      onClick={() => setActiveSection(item.id)}
-                      className={`w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-left transition-colors ${
-                        activeSection === item.id
-                          ? 'bg-blue-50 text-blue-700 border-b-4 border-blue-700'
-                          : 'text-gray-700 hover:bg-gray-50'
-                      }`}
-                    >
-                      <Icon className="w-5 h-5" />
-                      <span className="text-sm font-medium">{item.label}</span>
-                    </button>
-                  );
-                })}
-              </nav>
-            </div>
-          </div>
+      <main className="max-w-md mx-auto px-4 py-4 space-y-4">
+        {/* Horizontal navigation (touch-friendly) */}
+        <nav className="flex flex-wrap gap-2 overflow-x-auto pb-2">
+          {navigationItems.map((nav) => {
+            const Icon = nav.icon;
+            const active = activeSection === nav.id;
+            return (
+              <button
+                key={nav.id}
+                onClick={() => changeSection(nav.id)}
+                className={`flex items-center gap-2 px-3 py-2 rounded-lg ${active ? 'bg-blue-600 text-white' : 'bg-white shadow-sm'}`}
+              >
+                <Icon className="w-4 h-4" />
+                <span className="text-sm font-medium">{nav.label}</span>
+              </button>
+            );
+          })}
+        </nav>
 
-          {/* Main Content */}
-          <div className="w-full">
-            {/* Quick Actions */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-              <div className="bg-white rounded-lg shadow-sm p-6 hover:shadow-md transition-shadow cursor-pointer border-l-4 border-blue-500">
-                <div className="flex items-center space-x-3">
-                  <Video className="w-8 h-8 text-blue-600" />
-                  <div>
-                    <h4 className="font-semibold text-gray-900">Video Hướng Dẫn</h4>
-                    <p className="text-sm text-gray-600">Học qua video chi tiết</p>
-                  </div>
-                </div>
-              </div>
-              <div className="bg-white rounded-lg shadow-sm p-6 hover:shadow-md transition-shadow cursor-pointer border-l-4 border-green-500">
-                <div className="flex items-center space-x-3">
-                  <Download className="w-8 h-8 text-green-600" />
-                  <div>
-                    <h4 className="font-semibold text-gray-900">Tài Liệu PDF</h4>
-                    <p className="text-sm text-gray-600">Tải tài liệu hướng dẫn</p>
-                  </div>
-                </div>
-              </div>
-              <div className="bg-white rounded-lg shadow-sm p-6 hover:shadow-md transition-shadow cursor-pointer border-l-4 border-purple-500">
-                <div className="flex items-center space-x-3">
-                  <MessageSquare className="w-8 h-8 text-purple-600" />
-                  <div>
-                    <h4 className="font-semibold text-gray-900">Chat Hỗ Trợ</h4>
-                    <p className="text-sm text-gray-600">Tư vấn trực tuyến 24/7</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Guide Content */}
-            <div className="bg-white rounded-lg shadow-sm p-6 mb-8">
-              <h2 className="text-2xl font-bold text-gray-900 mb-6">{guides[activeSection].title}</h2>
-              <div className="space-y-6">
-                {guides[activeSection].content.map((item, index) => (
-                  <div key={index} className="border-l-4 border-blue-200 pl-6">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-2">{item.step}</h3>
-                    <p className="text-gray-700 leading-relaxed">{item.details}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* FAQ Section */}
-            <div className="bg-white rounded-lg shadow-sm p-6">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-2xl font-bold text-gray-900">Câu Hỏi Thường Gặp</h2>
-                <div className="relative">
-                  <Search className="w-5 h-5 absolute left-3 top-3 text-gray-400" />
-                  <input
-                    type="text"
-                    placeholder="Tìm kiếm câu hỏi..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                  />
-                </div>
-              </div>
-              
-              <div className="space-y-4">
-                {filteredFAQ.map((item, index) => (
-                  <div key={index} className="border border-gray-200 rounded-lg">
-                    <button
-                      className="w-full flex items-center justify-between p-4 text-left hover:bg-gray-50"
-                      onClick={() => setExpandedFAQ(expandedFAQ === index ? null : index)}
-                    >
-                      <span className="font-medium text-gray-900">{item.question}</span>
-                      {expandedFAQ === index ? (
-                        <ChevronDown className="w-5 h-5 text-gray-500" />
-                      ) : (
-                        <ChevronRight className="w-5 h-5 text-gray-500" />
-                      )}
-                    </button>
-                    {expandedFAQ === index && (
-                      <div className="px-4 pb-4 text-gray-700 leading-relaxed border-t border-gray-100">
-                        <div className="pt-4">
-                          {item.answer}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
+        {/* Quick actions */}
+        <div className="grid grid-cols-3 gap-3">
+          <button className="flex flex-col items-center bg-white rounded-lg p-3 shadow-sm">
+            <Video className="w-6 h-6 text-blue-600" />
+            <span className="text-xs mt-2">Video</span>
+          </button>
+          <button className="flex flex-col items-center bg-white rounded-lg p-3 shadow-sm">
+            <Download className="w-6 h-6 text-green-600" />
+            <span className="text-xs mt-2">PDF</span>
+          </button>
+          <button className="flex flex-col items-center bg-white rounded-lg p-3 shadow-sm">
+            <MessageSquare className="w-6 h-6 text-purple-600" />
+            <span className="text-xs mt-2">Chat</span>
+          </button>
         </div>
-      </div>
+
+        {/* Guide content */}
+        <section className="bg-white rounded-lg shadow-sm p-4">
+          <h2 className="text-lg font-semibold text-gray-900 mb-3">{guides[activeSection].title}</h2>
+          <div className="space-y-3">
+            {guides[activeSection].content.map((c, idx) => (
+              <div key={idx} className="border-l-2 border-blue-100 pl-3">
+                <div className="text-sm font-medium text-gray-900">{c.step}</div>
+                <div className="text-sm text-gray-600 mt-1">{c.details}</div>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* FAQ */}
+        <section className="bg-white rounded-lg shadow-sm p-4">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-lg font-semibold">Câu hỏi thường gặp</h3>
+            <div className="text-xs text-gray-500">{filteredFAQ.length} kết quả</div>
+          </div>
+
+          <div className="space-y-3">
+            {filteredFAQ.map((f, i) => (
+              <div key={i} className="border rounded-lg overflow-hidden">
+                <button
+                  onClick={() => toggleFAQ(i)}
+                  className="w-full flex items-center justify-between p-3 text-left"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center text-gray-600">
+                      <Book className="w-4 h-4" />
+                    </div>
+                    <div className="text-sm font-medium text-gray-900">{f.question}</div>
+                  </div>
+                  <div className="text-gray-400">
+                    {expandedFAQ === i ? <ChevronDown className="w-5 h-5" /> : <ChevronRight className="w-5 h-5" />}
+                  </div>
+                </button>
+                {expandedFAQ === i && (
+                  <div className="p-3 border-t text-sm text-gray-700">{f.answer}</div>
+                )}
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* Contact & Resources */}
+        <section className="bg-white rounded-lg shadow-sm p-4">
+          <h3 className="text-lg font-semibold mb-2">Cần hỗ trợ thêm?</h3>
+          <div className="flex items-center gap-3 mb-3">
+            <button className="flex-1 py-2 px-3 bg-blue-600 text-white rounded-lg flex items-center gap-2 justify-center">
+              <Mail className="w-4 h-4" />
+              Gửi email hỗ trợ
+            </button>
+            <button className="py-2 px-3 border rounded-lg">
+              <Globe className="w-4 h-4" />
+            </button>
+          </div>
+          <div className="text-xs text-gray-500">Hoặc gọi hotline: <span className="font-medium text-gray-900">{hotline}</span></div>
+        </section>
+      </main>
+
     </div>
   );
-};
-
-export default RecruiterSupportPage;
+}
