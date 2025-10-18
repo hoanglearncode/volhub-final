@@ -125,9 +125,15 @@ const RecruitmentDashboard = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Stats Cards */}
+      <div className="bg-white shadow-sm border-b border-gray-200">
+        <div className="px-6 py-4 max-w-7xl mx-auto flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">Báo cáo Tuyển dụng</h1>
+            <p className="text-gray-600 mt-1">Báo cáo về hệ thống tuyển dụng và ứng viên</p>
+          </div>
+        </div>
+      </div>
+      <div className=" mx-auto px-4 sm:px-6 lg:px-8 py-8 mb-18">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           {statsCards.map((card, index) => (
             <div key={index} className={`${card.bgColor} rounded-xl p-6 border border-gray-100 hover:shadow-lg transition-shadow`}>
@@ -246,42 +252,7 @@ const RecruitmentDashboard = () => {
             </AreaChart>
           </ResponsiveContainer>
         </div>
-
-        {/* Bar Chart - Top Positions */}
-        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
-          <div className="flex items-center justify-between mb-6">
-            <h3 className="text-lg font-semibold text-gray-900">Vị trí hot nhất</h3>
-            <Briefcase className="w-5 h-5 text-orange-500" />
-          </div>
-          <ResponsiveContainer width="100%" height={400}>
-            <BarChart data={stats.topPositions} layout="horizontal">
-              <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
-              <XAxis type="number" stroke="#6b7280" fontSize={12} />
-              <YAxis 
-                dataKey="position" 
-                type="category" 
-                stroke="#6b7280" 
-                fontSize={12}
-                width={150}
-              />
-              <Tooltip 
-                formatter={(value, name) => [value.toLocaleString() + ' đơn', 'Số lượng ứng tuyển']}
-              />
-              <Bar 
-                dataKey="applications" 
-                fill="url(#colorBar)"
-                radius={[0, 4, 4, 0]}
-              />
-              <defs>
-                <linearGradient id="colorBar" x1="0" y1="0" x2="1" y2="0">
-                  <stop offset="5%" stopColor="#f97316" stopOpacity={0.8}/>
-                  <stop offset="95%" stopColor="#ea580c" stopOpacity={1}/>
-                </linearGradient>
-              </defs>
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-
+        
         {/* Summary Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
           <div className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl p-6 text-white">

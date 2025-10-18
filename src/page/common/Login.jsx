@@ -1,7 +1,7 @@
 import React from "react";
 import { CheckCircle, Lock, Mail, ArrowRight } from "lucide-react";
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { data, Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import {toast, ToastContainer} from 'react-toastify';
 import parseJwtNoLib from "../../utils/tokenParser";
@@ -13,8 +13,23 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [isRead, setIsRead] = useState(false);
 
-  const [err, setErr] = useState({})
+  const loginWithFacebook = async () => {
+    try {
+      const data = await axios.get(`${import.meta.env.VITE_API}/oauth2/authorization/facebook`);
+      console.log(data);
+    } catch (error) {
+      console.log(error);
+    }
+  }
 
+  const loginWithGoogle = async () => {
+    try {
+      const data = await axios.get(`${import.meta.env.VITE_API}/oauth2/authorization/google`)
+      console.log(data)
+    } catch (error) {
+      console.log(error);
+    }
+  }
 
   const handleSubmit = async () => {
     try {
@@ -104,8 +119,7 @@ export default function LoginPage() {
       {/* Right Side - Login Form */}
       <div className="w-full lg:w-1/2 flex items-center justify-center bg-white p-4 lg:p-8">
         <div className="w-full max-w-md">
-          {/* Mobile Logo (Visible only on mobile) */}
-          <div className="text-center pb-8 lg:pb-10 lg:hidden">
+          <div className="text-center lg:pb-8 lg:pb-10 lg:hidden">
             <div className="w-20 h-20 mx-auto mb-6 bg-gradient-to-r from-blue-400 to-purple-400 rounded-2xl flex items-center justify-center shadow-lg">
               <img src="/logo.svg" alt="logo" className="rounded-full" />
             </div>
@@ -225,8 +239,8 @@ export default function LoginPage() {
 
               {/* Social Login Buttons */}
               <div className="mt-4 lg:mt-6 grid grid-cols-2 gap-3">
-                <Link
-                  href="/login-google"
+                <button
+                  onClick={()=> loginWithGoogle()}
                   className="w-full inline-flex justify-center py-3 px-4 border border-gray-200 lg:border-gray-300 rounded-xl lg:rounded-lg bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors duration-200"
                 >
                   <svg className="w-4 h-4 lg:w-5 lg:h-5 mr-2" viewBox="0 0 24 24">
@@ -248,9 +262,9 @@ export default function LoginPage() {
                     />
                   </svg>
                   Google
-                </Link>
-                <Link
-                  href="/login-facebook"
+                </button>
+                <button
+                  onClick={()=> loginWithFacebook()}
                   className="w-full inline-flex justify-center py-3 px-4 border border-gray-200 lg:border-gray-300 rounded-xl lg:rounded-lg bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors duration-200"
                 >
                   <svg
@@ -261,7 +275,7 @@ export default function LoginPage() {
                     <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
                   </svg>
                   Facebook
-                </Link>
+                </button>
               </div>
             </div>
 

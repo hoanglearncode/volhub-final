@@ -26,7 +26,7 @@ const EmailVerificationStep = ({ onBack, onNext }) => {
 
   return (
     <div className="bg-white min-h-screen">
-      <div className="max-w-4xl mx-auto p-6">
+      <div className="max-w-4xl mx-auto p-6 mb-18">
         {/* Progress Bar */}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-2">
@@ -1213,7 +1213,7 @@ export default function VerificationPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 mb-18">
       {renderStep()}
     </div>
   );

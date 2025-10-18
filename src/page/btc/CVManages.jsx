@@ -1,5 +1,4 @@
 import React, { useEffect, useMemo, useState, useRef } from 'react';
-import axios from 'axios';
 import {
   Search,
   Users,
@@ -13,122 +12,76 @@ import {
   Trash2,
   Filter,
   MoreHorizontal,
-  Save,
-  Zap,
-  FileDown
+  Zap
 } from 'lucide-react';
 
-/**
- * CVManagerFull.jsx
- * A fully-featured CV management page (single-file, composable components inside)
- * - Tabs: Event / Recommend / Evaluate
- * - Search + Filters
- * - Bulk actions (approve/reject/save/export)
- * - Row actions (view details, approve/reject, download CV)
- * - Drawer for CV detail
- * - Pagination + pageSize
- * - Optimistic UI with graceful error handling
- *
- * Configure via env var VITE_API or pass a custom basePath to axios.
- * Replace placeholder API endpoints with your real endpoints.
- */
+/*
+  CVManager.mobile.ui.jsx
+  - UI-only, mobile-first, responsive version of CVManager
+  - All API calls & heavy logic removed (stubs kept where UI needs handlers)
+  - Use sample() at bottom for demo data
+  - Put into your project and wire real handlers later
+*/
 
-const API_BASE = import.meta.env.VITE_API || '';
-const PAGE_SIZE_OPTIONS = [10, 25, 50];
-
-/* ---------------------- Helpers ---------------------- */
 const formatDate = (iso) => {
   if (!iso) return '-';
   try { return new Date(iso).toLocaleDateString('vi-VN'); } catch(e) { return iso; }
 };
 
-const downloadBlob = (blob, filename) => {
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = filename;
-  a.click();
-  URL.revokeObjectURL(url);
-};
-
-/* ---------------------- Subcomponents ---------------------- */
-function Badge({ children, className = '' }) {
+function Badge({ children, className = '' }){
   return <div className={`inline-flex items-center text-xs font-medium px-2 py-1 rounded ${className}`}>{children}</div>;
 }
 
-function Empty({ title='Không có dữ liệu', subtitle='' }) {
+function Empty({ title='Không có dữ liệu', subtitle='' }){
   return (
-    <div className="py-12 text-center text-gray-500">
-      <FileText className="mx-auto mb-4 w-8 h-8 text-gray-300" />
-      <h4 className="font-semibold text-lg">{title}</h4>
-      {subtitle && <p className="mt-2">{subtitle}</p>}
+    <div className="py-10 text-center text-gray-500">
+      <FileText className="mx-auto mb-3 w-8 h-8 text-gray-300" />
+      <h4 className="font-semibold">{title}</h4>
+      {subtitle && <p className="mt-2 text-sm">{subtitle}</p>}
     </div>
   );
 }
 
-function ConfirmModal({ open, onClose, onConfirm, title, description, confirmLabel='Xác nhận' }){
-  if(!open) return null;
+function Drawer({ open, onClose, cv }){
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-      <div className="bg-white rounded-lg shadow-lg w-full max-w-md p-6">
-        <h3 className="text-lg font-semibold">{title}</h3>
-        <p className="mt-2 text-sm text-gray-600">{description}</p>
-        <div className="mt-6 flex justify-end gap-3">
-          <button onClick={onClose} className="px-4 py-2 border rounded">Hủy</button>
-          <button onClick={onConfirm} className="px-4 py-2 bg-red-600 text-white rounded">{confirmLabel}</button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/* Drawer to show CV details */
-function CVDrawer({ open, onClose, cv, onApprove, onReject, onSave }){
-  return (
-    <div className={`fixed inset-y-0 right-0 z-40 w-full md:w-1/3 bg-white shadow-xl transform transition-transform ${open ? 'translate-x-0' : 'translate-x-full'}`}>
+    <div className={`fixed inset-y-0 right-0 z-40 w-full max-w-md bg-white shadow-xl transform transition-transform ${open ? 'translate-x-0' : 'translate-x-full'}`} aria-hidden={!open}>
       <div className="p-4 border-b flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 text-white flex items-center justify-center font-bold">{(cv?.name||'U').charAt(0)}</div>
           <div>
-            <div className="font-semibold">{cv?.name}</div>
-            <div className="text-sm text-gray-500">{cv?.position}</div>
+            <div className="font-semibold">{cv?.name || '-'}</div>
+            <div className="text-sm text-gray-500">{cv?.position || '-'}</div>
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          <button onClick={() => onSave && onSave(cv)} className="px-3 py-1 rounded bg-yellow-100 text-yellow-700 text-sm"><Save size={14}/> Lưu</button>
-          <button onClick={onClose} className="p-2 rounded hover:bg-gray-100"><X size={16}/></button>
-        </div>
+        <button onClick={onClose} className="p-2 rounded hover:bg-gray-100" aria-label="Đóng"><X size={18} /></button>
       </div>
 
-      <div className="p-4 overflow-y-auto h-[calc(100vh-160px)]">
+      <div className="p-4 overflow-y-auto h-[calc(100vh-140px)]">
         {!cv ? <Empty /> : (
-          <div className="space-y-4">
+          <div className="space-y-4 text-sm text-gray-700">
             <div>
-              <h4 className="text-sm font-semibold text-gray-700">Thông tin chung</h4>
-              <div className="mt-2 text-sm text-gray-600">
-                <div><strong>Email:</strong> {cv.email || '-'}</div>
-                <div><strong>Số điện thoại:</strong> {cv.phone || '-'}</div>
-                <div><strong>Địa chỉ:</strong> {cv.address || '-'}</div>
-                <div><strong>Ngày nộp:</strong> {formatDate(cv.appliedAt)}</div>
-              </div>
+              <div className="text-xs text-gray-500">Email</div>
+              <div className="mt-1">{cv.email || '-'}</div>
             </div>
-
             <div>
-              <h4 className="text-sm font-semibold text-gray-700">Kỹ năng</h4>
-              <div className="mt-2 flex flex-wrap gap-2">
-                {(cv.skills || []).map((s, i) => <Badge key={i} className="bg-gray-100 text-gray-700">{s}</Badge>)}
-              </div>
+              <div className="text-xs text-gray-500">Số điện thoại</div>
+              <div className="mt-1">{cv.phone || '-'}</div>
             </div>
-
             <div>
-              <h4 className="text-sm font-semibold text-gray-700">Mô tả/Thư ứng tuyển</h4>
-              <div className="mt-2 text-sm text-gray-600 whitespace-pre-wrap">{cv.cover || 'Không có'}</div>
+              <div className="text-xs text-gray-500">Địa chỉ</div>
+              <div className="mt-1">{cv.address || '-'}</div>
             </div>
-
-            <div className="flex gap-2 mt-4">
-              <button onClick={() => onApprove && onApprove(cv)} className="px-4 py-2 bg-green-600 text-white rounded">Phê duyệt</button>
-              <button onClick={() => onReject && onReject(cv)} className="px-4 py-2 bg-red-600 text-white rounded">Từ chối</button>
-              <button onClick={() => onSave && onSave(cv)} className="px-4 py-2 bg-yellow-100 text-yellow-700 rounded">Lưu</button>
+            <div>
+              <div className="text-xs text-gray-500">Kỹ năng</div>
+              <div className="mt-2 flex flex-wrap gap-2">{(cv.skills||[]).map((s,i)=>(<Badge key={i} className="bg-gray-100 text-gray-700">{s}</Badge>))}</div>
+            </div>
+            <div>
+              <div className="text-xs text-gray-500">Thư ứng tuyển</div>
+              <div className="mt-2 whitespace-pre-wrap text-sm text-gray-600">{cv.cover || '-'}</div>
+            </div>
+            <div className="flex gap-2">
+              <button className="flex-1 px-3 py-2 bg-green-600 text-white rounded">Phê duyệt</button>
+              <button className="flex-1 px-3 py-2 bg-red-600 text-white rounded">Từ chối</button>
             </div>
           </div>
         )}
@@ -137,322 +90,138 @@ function CVDrawer({ open, onClose, cv, onApprove, onReject, onSave }){
   );
 }
 
-/* CV Table */
-function CVTable({ items, selectedIds, onToggleSelect, onView, onDownload, onApprove, onReject, onSave }){
-  if(!items || items.length === 0) return <Empty title="Không có hồ sơ" />;
+/* Mobile card item */
+function CardRow({ cv, onView, onDownload, onAction }){
   return (
-    <table className="w-full border-collapse">
-      <thead>
-        <tr className="text-left text-sm text-gray-500 border-b">
-          <th className="py-3 px-2 w-8"> </th>
-          <th className="py-3 px-2">Ứng viên</th>
-          <th className="py-3 px-2">Vị trí</th>
-          <th className="py-3 px-2">Kỹ năng</th>
-          <th className="py-3 px-2">Trạng thái</th>
-          <th className="py-3 px-2">Ngày nộp</th>
-          <th className="py-3 px-2 text-right">Hành động</th>
-        </tr>
-      </thead>
-      <tbody>
-        {items.map(cv => (
-          <tr key={cv.id} className="border-b hover:bg-gray-50">
-            <td className="py-3 px-2 align-top">
-              <input type="checkbox" checked={selectedIds.includes(cv.id)} onChange={() => onToggleSelect(cv.id)} />
-            </td>
-            <td className="py-3 px-2 align-top">
-              <div className="font-medium">{cv.name}</div>
-              <div className="text-xs text-gray-500">{cv.email || '—'}</div>
-            </td>
-            <td className="py-3 px-2 align-top">{cv.position}</td>
-            <td className="py-3 px-2 align-top"><div className="flex flex-wrap gap-1">{(cv.skills||[]).slice(0,3).map((s,i)=>(<Badge key={i} className="bg-gray-100 text-gray-700">{s}</Badge>))}{(cv.skills||[]).length>3 && <Badge className="bg-gray-50 text-gray-500">+{(cv.skills||[]).length-3}</Badge>}</div></td>
-            <td className="py-3 px-2 align-top">
-              {cv.status === 'pending' && <Badge className="bg-yellow-100 text-yellow-800">Đang chờ</Badge>}
-              {cv.status === 'saved' && <Badge className="bg-purple-100 text-purple-700">Đã lưu</Badge>}
-              {cv.status === 'reviewed' && <Badge className="bg-green-100 text-green-700">Đã xem</Badge>}
-              {cv.status === 'rejected' && <Badge className="bg-red-100 text-red-700">Bị từ chối</Badge>}
-            </td>
-            <td className="py-3 px-2 align-top">{formatDate(cv.appliedAt)}</td>
-            <td className="py-3 px-2 align-top text-right">
-              <div className="inline-flex items-center gap-2">
-                <button onClick={() => onView(cv)} title="Xem" className="px-2 py-1 rounded bg-white border hover:bg-gray-50"><Eye size={14} /></button>
-                <button onClick={() => onDownload(cv)} title="Tải CV" className="px-2 py-1 rounded bg-white border hover:bg-gray-50"><Download size={14} /></button>
-                <button onClick={() => onApprove(cv)} title="Phê duyệt" className="px-2 py-1 rounded bg-green-50 text-green-700 hover:bg-green-100"><Check size={14} /></button>
-                <button onClick={() => onReject(cv)} title="Từ chối" className="px-2 py-1 rounded bg-red-50 text-red-700 hover:bg-red-100"><Trash2 size={14} /></button>
-                <button onClick={() => onSave(cv)} title="Lưu" className="px-2 py-1 rounded bg-yellow-50 text-yellow-700 hover:bg-yellow-100"><Star size={14} /></button>
-              </div>
-            </td>
-          </tr>
-        ))}
-      </tbody>
-    </table>
-  );
-}
-
-/* ---------------------- Main Page ---------------------- */
-export default function CVManagerFull({ apiBase = API_BASE }){
-  const [active, setActive] = useState('event');
-  const [data, setData] = useState({ event: [], recommend: [], evaluate: [] });
-  const [loading, setLoading] = useState(false);
-  const [search, setSearch] = useState('');
-  const [debounced, setDebounced] = useState('');
-
-  // selections & bulk
-  const [selectedIds, setSelectedIds] = useState([]);
-  const [allSelected, setAllSelected] = useState(false);
-
-  // drawer
-  const [drawerOpen, setDrawerOpen] = useState(false);
-  const [activeCV, setActiveCV] = useState(null);
-
-  // pagination
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(PAGE_SIZE_OPTIONS[0]);
-
-  // confirm modal
-  const [confirm, setConfirm] = useState({ open: false, action: null, target: null });
-
-  // load initial data (try API then fallback mock)
-  useEffect(() => {
-    let mounted = true;
-    const load = async () => {
-      setLoading(true);
-      try {
-        const res = await axios.get(`${apiBase}/cvs`);
-        const payload = res?.data?.result || res?.data || null;
-        if (payload) {
-          setData({
-            event: payload.cvForEvent || payload.event || [],
-            recommend: payload.cvForRecommend || payload.recommend || [],
-            evaluate: payload.cvForEvaluate || payload.evaluate || []
-          });
-        } else {
-          // fallback dummy
-          setData(sample());
-        }
-      } catch (e) {
-        console.warn('Failed to load CVs, using sample', e?.message);
-        setData(sample());
-      } finally {
-        if(mounted) setLoading(false);
-      }
-    };
-    load();
-    return () => { mounted = false; };
-  }, [apiBase]);
-
-  // debounce search
-  useEffect(() => {
-    const t = setTimeout(() => setDebounced(search.trim().toLowerCase()), 300);
-    return () => clearTimeout(t);
-  }, [search]);
-
-  const activeList = useMemo(() => data[active] || [], [data, active]);
-
-  const filtered = useMemo(() => {
-    if(!debounced) return activeList;
-    return activeList.filter(cv => {
-      const hay = `${cv.name} ${cv.position} ${(cv.skills||[]).join(' ')}`.toLowerCase();
-      return hay.includes(debounced);
-    });
-  }, [debounced, activeList]);
-
-  const totalPages = Math.max(1, Math.ceil((filtered.length||0) / pageSize));
-  useEffect(() => { if(page > totalPages) setPage(1); }, [totalPages]);
-  const paginated = useMemo(() => {
-    const start = (page-1)*pageSize;
-    return filtered.slice(start, start + pageSize);
-  }, [filtered, page, pageSize]);
-
-  // selection
-  useEffect(() => {
-    setSelectedIds([]);
-    setAllSelected(false);
-  }, [active, debounced, pageSize, page]);
-
-  const toggleSelect = (id) => {
-    setSelectedIds(prev => prev.includes(id) ? prev.filter(x=>x!==id) : [...prev, id]);
-  };
-  const toggleSelectAll = () => {
-    if(allSelected) {
-      setSelectedIds([]);
-      setAllSelected(false);
-    } else {
-      setSelectedIds(paginated.map(i=>i.id));
-      setAllSelected(true);
-    }
-  };
-
-  // actions (optimistic)
-  const doApprove = async (cv) => {
-    // optimistic update
-    updateStatusLocal(cv.id, 'reviewed');
-    try {
-      await axios.post(`${apiBase}/cvs/${cv.id}/approve`);
-    } catch (e) {
-      console.error('approve failed', e);
-      // rollback
-      updateStatusLocal(cv.id, cv.status);
-    }
-  };
-
-  const doReject = async (cv) => {
-    updateStatusLocal(cv.id, 'rejected');
-    try { await axios.post(`${apiBase}/cvs/${cv.id}/reject`); } catch(e){ console.error(e); updateStatusLocal(cv.id, cv.status); }
-  };
-
-  const doSave = async (cv) => {
-    updateStatusLocal(cv.id, 'saved');
-    try { await axios.post(`${apiBase}/cvs/${cv.id}/save`); } catch(e){ console.error(e); updateStatusLocal(cv.id, cv.status); }
-  };
-
-  const updateStatusLocal = (id, status) => {
-    setData(prev => ({
-      ...prev,
-      [active]: prev[active].map(c => c.id === id ? { ...c, status } : c)
-    }));
-    if(activeCV && activeCV.id === id) setActiveCV(prev => ({ ...prev, status }));
-  };
-
-  const viewCV = (cv) => { setActiveCV(cv); setDrawerOpen(true); };
-
-  const downloadCV = async (cv) => {
-    try {
-      const res = await axios.get(`${apiBase}/cvs/${cv.id}/download`, { responseType: 'blob' });
-      const filename = `${cv.name.replace(/\s+/g,'_')}_cv.pdf`;
-      downloadBlob(res.data, filename);
-    } catch (e) {
-      alert('Tải CV thất bại');
-    }
-  };
-
-  // bulk actions
-  const bulkApprove = async () => {
-    if(selectedIds.length === 0) return alert('Chưa chọn hồ sơ');
-    // optimistic
-    const prev = selectedIds.slice();
-    selectedIds.forEach(id => updateStatusLocal(id, 'reviewed'));
-    try { await axios.post(`${apiBase}/cvs/bulk/approve`, { ids: selectedIds }); setSelectedIds([]); setAllSelected(false); } catch(e){ alert('Thao tác thất bại'); console.error(e); /* rollback would require cached prev state */ }
-  };
-
-  const bulkExport = () => {
-    const rows = filtered.map(r => ({ id: r.id, name: r.name, position: r.position, skills: (r.skills||[]).join('; '), status: r.status, appliedAt: r.appliedAt }));
-    if(!rows.length) return alert('Không có dữ liệu để xuất');
-    const csv = [Object.keys(rows[0]).join(','), ...rows.map(o=>Object.values(o).map(v=>`"${String(v||'')}"`).join(','))].join('\n');
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    downloadBlob(blob, `cvs_export_${active}_${new Date().toISOString().slice(0,10)}.csv`);
-  };
-
-  /* Confirm modal handlers */
-  const openConfirm = (action, target) => setConfirm({ open: true, action, target });
-  const closeConfirm = () => setConfirm({ open: false, action: null, target: null });
-  const handleConfirm = async () => {
-    if(!confirm.open) return;
-    const { action, target } = confirm;
-    if(action === 'delete'){
-      // perform delete
-      try { await axios.delete(`${apiBase}/cvs/${target.id}`); setData(prev=>({ ...prev, [active]: prev[active].filter(c=>c.id!==target.id) })); } catch(e){ alert('Xóa thất bại'); }
-    }
-    closeConfirm();
-  };
-
-  const handleSaveFromDrawer = async (cv) => { await doSave(cv); alert('Đã lưu hồ sơ'); };
-
-  return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-7xl mx-auto space-y-6">
-        {/* Header / Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          <div className="bg-white p-4 rounded-xl shadow flex items-center justify-between">
-            <div>
-              <div className="text-sm text-gray-500">Tổng hồ sơ</div>
-              <div className="text-2xl font-bold">{(data.event.length + data.recommend.length + data.evaluate.length)}</div>
-            </div>
-            <div className="w-12 h-12 bg-blue-50 rounded-full flex items-center justify-center"><Users className="text-blue-600"/></div>
-          </div>
-
-          <div className="bg-white p-4 rounded-xl shadow flex items-center justify-between">
-            <div>
-              <div className="text-sm text-gray-500">Đang chờ</div>
-              <div className="text-2xl font-bold">{data.event.filter(c=>c.status==='pending').length}</div>
-            </div>
-            <div className="w-12 h-12 bg-yellow-50 rounded-full flex items-center justify-center"><Award className="text-yellow-600"/></div>
-          </div>
-
-          <div className="bg-white p-4 rounded-xl shadow flex items-center justify-between">
-            <div>
-              <div className="text-sm text-gray-500">Đã xem</div>
-              <div className="text-2xl font-bold">{data.event.filter(c=>c.status==='reviewed').length}</div>
-            </div>
-            <div className="w-12 h-12 bg-green-50 rounded-full flex items-center justify-center"><Eye className="text-green-600"/></div>
-          </div>
-
-          <div className="bg-white p-4 rounded-xl shadow flex items-center justify-between">
-            <div>
-              <div className="text-sm text-gray-500">Đã lưu</div>
-              <div className="text-2xl font-bold">{data.event.filter(c=>c.status==='saved').length}</div>
-            </div>
-            <div className="w-12 h-12 bg-purple-50 rounded-full flex items-center justify-center"><Star className="text-purple-600"/></div>
-          </div>
+    <div className="p-4 bg-white border-b flex items-start justify-between">
+      <div className="min-w-0">
+        <div className="flex items-center gap-2">
+          <div className="font-medium text-gray-900 truncate">{cv.name}</div>
+          <div className={`ml-2 text-xs px-2 py-0.5 rounded-full ${cv.status==='pending'?'bg-yellow-100 text-yellow-800':cv.status==='saved'?'bg-purple-100 text-purple-700':cv.status==='reviewed'?'bg-green-100 text-green-700':'bg-gray-100 text-gray-700'}`}>{cv.status}</div>
         </div>
-
-        {/* Controls */}
-        <div className="bg-white p-4 rounded-xl shadow flex flex-col md:flex-row md:items-center gap-3 md:gap-6">
-          <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-            <input value={search} onChange={(e)=>{ setSearch(e.target.value); setPage(1); }} placeholder="Tìm kiếm tên, vị trí, kỹ năng..." className="w-full pl-10 pr-3 py-2 border rounded-lg" />
-          </div>
-
-          <div className="flex items-center gap-2">
-            <div role="tablist" className="flex items-center gap-2">
-              <button onClick={()=>{ setActive('event'); setPage(1); }} className={`px-3 py-2 rounded ${active==='event'?'bg-blue-600 text-white':'bg-gray-100'}`}>Theo sự kiện</button>
-              <button onClick={()=>{ setActive('recommend'); setPage(1); }} className={`px-3 py-2 rounded ${active==='recommend'?'bg-blue-600 text-white':'bg-gray-100'}`}>Đề xuất</button>
-              <button onClick={()=>{ setActive('evaluate'); setPage(1); }} className={`px-3 py-2 rounded ${active==='evaluate'?'bg-blue-600 text-white':'bg-gray-100'}`}>Đánh giá</button>
-            </div>
-
-            <button onClick={bulkExport} title="Xuất CSV" className="px-3 py-2 bg-green-600 text-white rounded">Xuất</button>
-            <button onClick={bulkApprove} title="Duyệt hàng loạt" className="px-3 py-2 bg-indigo-600 text-white rounded">Duyệt</button>
-          </div>
-        </div>
-
-        {/* Table panel */}
-        <div className="bg-white rounded-xl shadow p-4">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-3">
-              <input type="checkbox" checked={allSelected} onChange={toggleSelectAll} />
-              <div className="text-sm text-gray-600">Chọn tất cả trên trang</div>
-            </div>
-
-            <div className="flex items-center gap-3">
-              <select value={pageSize} onChange={(e)=>{ setPageSize(Number(e.target.value)); setPage(1); }} className="px-3 py-2 border rounded">
-                {PAGE_SIZE_OPTIONS.map(s => <option key={s} value={s}>{s} / trang</option>)}
-              </select>
-
-              <div className="text-sm text-gray-600">{filtered.length} kết quả</div>
-            </div>
-          </div>
-
-          <CVTable items={paginated} selectedIds={selectedIds} onToggleSelect={toggleSelect} onView={viewCV} onDownload={downloadCV} onApprove={doApprove} onReject={(cv)=>openConfirm('delete', cv)} onSave={doSave} />
-
-          {/* Pagination */}
-          <div className="mt-4 flex items-center justify-between">
-            <div className="text-sm text-gray-600">Hiển thị {paginated.length} / {filtered.length}</div>
-            <div className="flex items-center gap-2">
-              <button onClick={()=>setPage(p=>Math.max(1,p-1))} disabled={page<=1} className="px-3 py-1 border rounded">Prev</button>
-              <div className="px-3 py-1 border rounded">{page} / {totalPages}</div>
-              <button onClick={()=>setPage(p=>Math.min(totalPages, p+1))} disabled={page>=totalPages} className="px-3 py-1 border rounded">Next</button>
-            </div>
-          </div>
-        </div>
+        <div className="text-xs text-gray-500 truncate">{cv.position} • {formatDate(cv.appliedAt)}</div>
+        <div className="text-sm text-gray-600 mt-2 truncate">{(cv.skills||[]).slice(0,3).join(', ')}{(cv.skills||[]).length>3 ? '…' : ''}</div>
       </div>
 
-      <CVDrawer open={drawerOpen} onClose={()=>setDrawerOpen(false)} cv={activeCV} onApprove={doApprove} onReject={doReject} onSave={handleSaveFromDrawer} />
-
-      <ConfirmModal open={confirm.open} onClose={closeConfirm} onConfirm={handleConfirm} title={confirm.action==='delete' ? 'Xóa hồ sơ' : 'Xác nhận'} description={confirm.action==='delete' ? 'Bạn có chắc muốn xóa hồ sơ này? Hành động không thể hoàn tác.' : ''} />
+      <div className="flex flex-col items-end gap-2">
+        <div className="flex gap-2">
+          <button onClick={() => onView && onView(cv)} className="p-2 bg-white border rounded text-gray-600" aria-label="Xem"><Eye size={16} /></button>
+          <button onClick={() => onDownload && onDownload(cv)} className="p-2 bg-white border rounded text-gray-600" aria-label="Tải"><Download size={16} /></button>
+        </div>
+        <button onClick={() => onAction && onAction(cv)} className="text-sm text-gray-500">Chi tiết</button>
+      </div>
     </div>
   );
 }
 
-/* ---------------------- Sample data generator ---------------------- */
+export default function CVManagerMobile(){
+  // UI state only
+  const [activeTab, setActiveTab] = useState('event');
+  const [search, setSearch] = useState('');
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [activeCV, setActiveCV] = useState(null);
+
+  // sample data for UI demo
+  const [data, setData] = useState(sample());
+
+  const list = useMemo(() => data[activeTab] || [], [data, activeTab]);
+
+  const filtered = useMemo(() => {
+    const q = (search || '').trim().toLowerCase();
+    if(!q) return list;
+    return list.filter(cv => (`${cv.name} ${cv.position} ${(cv.skills||[]).join(' ')}`.toLowerCase()).includes(q));
+  }, [list, search]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+  useEffect(() => { if (page > totalPages) setPage(1); }, [totalPages]);
+  const paginated = useMemo(() => filtered.slice((page-1)*pageSize, (page-1)*pageSize + pageSize), [filtered, page, pageSize]);
+
+  const openDrawer = (cv) => { setActiveCV(cv); setDrawerOpen(true); };
+  const closeDrawer = () => { setDrawerOpen(false); setActiveCV(null); };
+
+  // stubs: UI shows these but user will wire logic later
+  const onDownload = (cv) => { alert('Stub: download ' + cv.name); };
+  const onApprove = (cv) => { alert('Stub: approve ' + cv.name); };
+  const onReject = (cv) => { alert('Stub: reject ' + cv.name); };
+
+  return (
+    <div className="min-h-screen bg-gray-50 p-4 sm:p-6 mb-18">
+      <div className="max-w-4xl mx-auto space-y-4">
+        {/* Header */}
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <h1 className="text-xl font-bold">Quản lý hồ sơ</h1>
+            <p className="text-sm text-gray-500">Xem, lọc và xử lý hồ sơ — giao diện tối ưu cho mobile</p>
+          </div>
+          <div className="w-10 h-10 bg-blue-50 rounded-full flex items-center justify-center"><Users className="text-blue-600"/></div>
+        </div>
+
+        {/* stats */}
+        <div className="grid grid-cols-2 gap-3">
+          <div className="bg-white p-3 rounded-lg shadow">
+            <div className="text-xs text-gray-500">Tổng hồ sơ</div>
+            <div className="text-lg font-bold">{data.event.length + data.recommend.length + data.evaluate.length}</div>
+          </div>
+          <div className="bg-white p-3 rounded-lg shadow">
+            <div className="text-xs text-gray-500">Đang chờ</div>
+            <div className="text-lg font-bold">{data.event.filter(c=>c.status==='pending').length}</div>
+          </div>
+        </div>
+
+        {/* controls */}
+        <div className="bg-white p-3 rounded-lg shadow flex flex-col sm:flex-row sm:items-center gap-3">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+            <input value={search} onChange={(e)=>{ setSearch(e.target.value); setPage(1); }} placeholder="Tìm kiếm tên, vị trí, kỹ năng..." className="w-full pl-10 pr-3 py-2 border rounded" />
+          </div>
+
+          <div className="flex items-center gap-2">
+            <div className="hidden sm:flex items-center gap-2">
+              <select value={pageSize} onChange={(e)=>{ setPageSize(Number(e.target.value)); setPage(1); }} className="px-3 py-2 border rounded">
+                <option value={10}>10</option>
+                <option value={25}>25</option>
+                <option value={50}>50</option>
+              </select>
+            </div>
+
+            <div className="flex items-center gap-1 bg-gray-100 rounded px-1">
+              <button onClick={()=>setActiveTab('event')} className={`px-3 py-1 rounded ${activeTab==='event'?'bg-blue-600 text-white':'text-gray-600'}`}>Sự kiện</button>
+              <button onClick={()=>setActiveTab('recommend')} className={`px-3 py-1 rounded ${activeTab==='recommend'?'bg-blue-600 text-white':'text-gray-600'}`}>Đề xuất</button>
+              <button onClick={()=>setActiveTab('evaluate')} className={`px-3 py-1 rounded ${activeTab==='evaluate'?'bg-blue-600 text-white':'text-gray-600'}`}>Đánh giá</button>
+            </div>
+          </div>
+        </div>
+
+        {/* list (mobile cards) */}
+        <div className="bg-white rounded-lg shadow overflow-hidden">
+          {paginated.length === 0 ? <Empty title="Không tìm thấy hồ sơ" /> : (
+            <div className="divide-y">
+              {paginated.map(cv => (
+                <CardRow key={cv.id} cv={cv} onView={openDrawer} onDownload={onDownload} onAction={(c)=>openDrawer(c)} />
+              ))}
+            </div>
+          )}
+
+          {/* pagination */}
+          <div className="p-3 flex items-center justify-between text-sm text-gray-600">
+            <div>Hiển thị {(page-1)*pageSize + 1} - {Math.min(page*pageSize, filtered.length)} trên {filtered.length}</div>
+            <div className="flex items-center gap-2">
+              <button onClick={()=>setPage(p=>Math.max(1,p-1))} className="px-3 py-1 border rounded" disabled={page<=1}>Trước</button>
+              <div className="px-3 py-1 border rounded">{page} / {totalPages}</div>
+              <button onClick={()=>setPage(p=>Math.min(totalPages,p+1))} className="px-3 py-1 border rounded" disabled={page>=totalPages}>Sau</button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <Drawer open={drawerOpen} onClose={closeDrawer} cv={activeCV} />
+    </div>
+  );
+}
+
 function sample(){
   return {
     event: [

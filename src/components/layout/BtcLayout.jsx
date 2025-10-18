@@ -1,3 +1,4 @@
+import React, { useEffect, useRef, useState } from "react";
 import { 
   Bell, 
   BellOff, 
@@ -37,8 +38,6 @@ import {
   Users2
 } from "lucide-react";
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
-import { useEffect, useState } from "react";
-
 import { useAuth } from "../../context/AuthContext";
 import axios from "axios";
 
@@ -73,10 +72,17 @@ function BtcLayout() {
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [notificationMenuOpen, setNotificationMenuOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [notification, setNotification] = useState([]);
   const [navData, setNavData] = useState([]);
   const [expandedMenus, setExpandedMenus] = useState({});
+
+  const userMenuRef = useRef(null);
+  const notificationRef = useRef(null);
+  const mobileSidebarRef = useRef(null);
+  const mobileToggleButtonRef = useRef(null);
+  const mobileSearchInputRef = useRef(null);
 
   useEffect(() => {
     const data = Notification.getNotification();
@@ -94,7 +100,6 @@ function BtcLayout() {
         badge: null,
         submenu: [
           { to: "/btc/events", title: "Danh sách sự kiện", Icon: ClipboardList },
-          { to: "/btc/events/calendar", title: "Lịch sự kiện", Icon: Calendar },
           { to: "/btc/events/recruitment-post", title: "Tạo sự kiện mới", Icon: Plus }
         ]
       },
@@ -131,12 +136,10 @@ function BtcLayout() {
         ]
       },
       { 
-        to: "/btc/promotion", 
+        to: "/btc/promotion/recap", 
         title: "Công cụ truyền thông", 
         Icon: Megaphone, 
-        badge: 2,
         submenu: [
-          { to: "/btc/promotion", title: "Quảng bá sự kiện", Icon: Megaphone },
           { to: "/btc/promotion/recap", title: "Album Recap", Icon: Camera },
           { to: "/btc/blog", title: "Quản lý Blog", Icon: FileText }
         ]
@@ -152,29 +155,35 @@ function BtcLayout() {
         ]
       },
     ]);
-    
+
     if (data.length > 0) {
       setNotification(data);
     }
   }, []);
 
+  // load user profile when token available
   useEffect(()=> {
+    let isMounted = true;
     const loaded =  async () => {
+      if (!token) return;
       try {
         const res = await axios.get(`${import.meta.env.VITE_API}/api/organizer/profile/me`,  {
           headers: {
             Authorization: `Bearer ${token}`,
           }
         });
+        if (!isMounted) return;
         if(res.data?.code === 0) {
           setUserData(res.data?.result);
         }
       } catch (error) {
-        console.log(error.response);
+        // safe logging for debug
+        console.error('Load profile error:', error?.response || error?.message || error);
       }
     }
     loaded();
-  }, [])
+    return () => { isMounted = false; }
+  }, [token]);
 
   const toggleSubmenu = (index) => {
     setExpandedMenus(prev => ({
@@ -183,23 +192,50 @@ function BtcLayout() {
     }));
   };
 
-  // Đóng tất cả menu khi click outside
+  // Đóng menu khi click outside (sử dụng ref)
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (!event.target.closest('.menu-container')) {
+      if (userMenuRef.current && !userMenuRef.current.contains(event.target)) {
         setUserMenuOpen(false);
+      }
+      if (notificationRef.current && !notificationRef.current.contains(event.target)) {
         setNotificationMenuOpen(false);
+      }
+      if (mobileSidebarRef.current && !mobileSidebarRef.current.contains(event.target) && mobileToggleButtonRef.current && !mobileToggleButtonRef.current.contains(event.target)) {
+        setMobileMenuOpen(false);
       }
     };
 
+    const handleEsc = (e) => {
+      if (e.key === 'Escape') {
+        setUserMenuOpen(false);
+        setNotificationMenuOpen(false);
+        setMobileMenuOpen(false);
+        setMobileSearchOpen(false);
+      }
+    }
+
     document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleEsc);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleEsc);
+    };
   }, []);
 
-  // Đóng mobile menu khi thay đổi route
+  // Close mobile menu on route change
   useEffect(() => {
     setMobileMenuOpen(false);
   }, [location.pathname]);
+
+  // prevent body scroll when mobile menu open
+  useEffect(() => {
+    if (mobileMenuOpen) {
+      document.body.classList.add('overflow-hidden');
+    } else {
+      document.body.classList.remove('overflow-hidden');
+    }
+  }, [mobileMenuOpen]);
 
   const renderNavItem = (item, index, isMobile = false) => {
     const Icon = item.Icon;
@@ -208,7 +244,7 @@ function BtcLayout() {
       (item.to !== '/btc' && location.pathname.startsWith(item.to));
     
     const hasSubmenu = item.submenu && item.submenu.length > 0;
-    const isExpanded = expandedMenus[index];
+    const isExpanded = !!expandedMenus[index];
 
     return (
       <div key={item.to}>
@@ -220,6 +256,8 @@ function BtcLayout() {
                 ? 'bg-green-50 text-green-700 border-r-2 border-green-500' 
                 : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
             }`}
+            aria-current={isActive ? 'page' : undefined}
+            onClick={() => { if (isMobile) setMobileMenuOpen(false); }}
           >
             <div className="flex-shrink-0">
               {Icon && (
@@ -229,30 +267,24 @@ function BtcLayout() {
                 />
               )}
             </div>
-            <span className={`${!isMobile && isCollapsed ? 'hidden' : 'block'} text-sm font-medium truncate`}>
+            <span className={`text-sm font-medium truncate`}>
               {item.title}
             </span>
-            {/* Tooltip for collapsed state */}
-            {!isMobile && isCollapsed && (
-              <div className="absolute left-full ml-2 px-3 py-1 bg-gray-800 text-white text-sm rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all whitespace-nowrap z-50">
-                {item.title}
-                {item.badge && item.badge > 0 && (
-                  <span className="ml-2 px-1.5 py-0.5 text-xs bg-red-500 rounded-full">
-                    {item.badge}
-                  </span>
-                )}
-              </div>
+            {item.badge && item.badge > 0 && (
+              <span className="ml-auto text-xs bg-red-500 text-white rounded-full px-2 py-0.5">{item.badge}</span>
             )}
           </Link>
 
           {/* Submenu toggle button */}
-          {hasSubmenu && (isMobile || !isCollapsed) && (
+          {hasSubmenu && (
             <button
               onClick={(e) => {
                 e.preventDefault();
                 toggleSubmenu(index);
               }}
               className="p-2 hover:bg-gray-100 rounded transition-colors mr-2"
+              aria-expanded={isExpanded}
+              aria-controls={`submenu-${index}`}
             >
               {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
             </button>
@@ -260,8 +292,8 @@ function BtcLayout() {
         </div>
 
         {/* Submenu */}
-        {hasSubmenu && isExpanded && (isMobile || !isCollapsed) && (
-          <div className="ml-6 mt-1 space-y-1">
+        {hasSubmenu && isExpanded && (
+          <div id={`submenu-${index}`} className="ml-6 mt-1 space-y-1">
             {item.submenu.map((subItem) => {
               const SubIcon = subItem.Icon;
               const isSubActive = location.pathname === subItem.to;
@@ -275,6 +307,7 @@ function BtcLayout() {
                       ? 'bg-green-50 text-green-700'
                       : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
                   }`}
+                  onClick={() => { if (isMobile) setMobileMenuOpen(false); }}
                 >
                   <SubIcon 
                     size={16} 
@@ -291,21 +324,24 @@ function BtcLayout() {
   };
   
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen w-full bg-gray-50">
       {/* Top Header */}
       <header className="fixed top-0 left-0 right-0 bg-slate-800 text-white z-50 shadow-lg">
         <div className="flex items-center justify-between px-4 h-14">
           {/* Left section */}
           <div className="flex items-center gap-4">
             <button 
+              ref={mobileToggleButtonRef}
               onClick={() => {
                 if (window.innerWidth < 1024) {
-                  setMobileMenuOpen(!mobileMenuOpen);
+                  setMobileMenuOpen(prev => !prev);
                 } else {
-                  setIsCollapsed(!isCollapsed);
+                  setIsCollapsed(prev => !prev);
                 }
               }}
               className="p-2 hover:bg-slate-700 rounded-lg transition-colors"
+              aria-label="Toggle menu"
+              aria-expanded={mobileMenuOpen}
             >
               <Menu size={20} />
             </button>
@@ -331,18 +367,33 @@ function BtcLayout() {
             </div>
 
             {/* Mobile search button */}
-            <button className="block md:hidden p-2 hover:bg-slate-700 rounded-lg transition-colors">
-              <Search size={18} />
-            </button>
+            <div className="flex md:hidden items-center">
+              {!mobileSearchOpen ? (
+                <button onClick={() => { setMobileSearchOpen(true); setTimeout(()=> mobileSearchInputRef.current?.focus(), 50); }} className="p-2 hover:bg-slate-700 rounded-lg transition-colors" aria-label="Search">
+                  <Search size={18} />
+                </button>
+              ) : (
+                <div className="flex items-center bg-slate-700 rounded-lg px-2 py-1 w-[60vw] max-w-sm">
+                  <Search size={16} className="text-slate-400 mr-2" />
+                  <input ref={mobileSearchInputRef} type="text" placeholder="Tìm kiếm" className="bg-transparent text-white placeholder-slate-400 text-sm outline-none flex-1" />
+                  <button onClick={() => setMobileSearchOpen(false)} className="p-1 ml-2">
+                    <X size={16} />
+                  </button>
+                </div>
+              )}
+            </div>
 
             {/* Notification */}
-            <div className="relative menu-container">
+            <div className="relative menu-container" ref={notificationRef}>
               <button 
                 onClick={() => {
-                  setNotificationMenuOpen(!notificationMenuOpen);
+                  setNotificationMenuOpen(prev => !prev);
                   if (userMenuOpen) setUserMenuOpen(false);
                 }}
                 className="relative p-2 hover:bg-slate-700 rounded-lg transition-colors"
+                aria-haspopup="true"
+                aria-expanded={notificationMenuOpen}
+                aria-label="Notifications"
               >
                 <Bell size={18} />
                 {notification.length > 0 && (
@@ -368,6 +419,7 @@ function BtcLayout() {
                       <button 
                         onClick={() => setNotificationMenuOpen(false)} 
                         className="w-8 h-8 bg-gray-100 hover:bg-red-500 hover:text-white transition rounded-full flex items-center justify-center"
+                        aria-label="Close notifications"
                       >
                         <X size={16} />
                       </button>
@@ -380,6 +432,7 @@ function BtcLayout() {
                           className={`group flex flex-col gap-1 px-4 py-3 transition border-b last:border-0 ${
                             item.read ? "bg-white hover:bg-gray-50" : "bg-blue-50 hover:bg-blue-100"
                           }`}
+                          onClick={() => setNotificationMenuOpen(false)}
                         >
                           <span className="font-medium text-gray-900 group-hover:text-blue-600 text-sm">
                             {item.title}
@@ -390,7 +443,7 @@ function BtcLayout() {
                       ))}
                     </div>
                     <div className="pt-2 py-2 text-gray-700 text-center hover:text-blue-600">
-                      <Link to={'/btc/notification-system'}>Xem tất cả</Link>
+                      <Link to={'/btc/notification-system'} onClick={() => setNotificationMenuOpen(false)}>Xem tất cả</Link>
                     </div>
                   </div>
                 )}
@@ -398,7 +451,7 @@ function BtcLayout() {
             </div>
 
             {/* Cart */}
-            <button onClick={() => navigate('/btc/my-cart')} className="relative p-2 hover:bg-slate-700 rounded-lg transition-colors">
+            <button onClick={() => navigate('/btc/my-cart')} className="relative p-2 hover:bg-slate-700 rounded-lg transition-colors" aria-label="Cart">
               <ShoppingCart size={18} />
               <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
                 0
@@ -406,13 +459,16 @@ function BtcLayout() {
             </button>
 
             {/* User Menu */}
-            <div className="relative menu-container">
+            <div className="relative menu-container" ref={userMenuRef}>
               <button 
                 onClick={() => {
-                  setUserMenuOpen(!userMenuOpen);
+                  setUserMenuOpen(prev => !prev);
                   if (notificationMenuOpen) setNotificationMenuOpen(false);
                 }}
                 className="flex items-center gap-2 hover:bg-slate-700 rounded-lg p-1 transition-colors"
+                aria-haspopup="true"
+                aria-expanded={userMenuOpen}
+                aria-label="User menu"
               >
                 <div className="w-8 h-8 bg-gradient-to-r from-green-400 to-blue-500 rounded-full flex items-center justify-center">
                   <User />
@@ -530,9 +586,9 @@ function BtcLayout() {
         </aside>
 
         {/* Mobile Sidebar */}
-        <div className={`fixed inset-0 z-40 lg:hidden ${mobileMenuOpen ? 'block' : 'hidden'}`}>
+        <div className={`fixed inset-0 z-40 lg:hidden ${mobileMenuOpen ? 'block' : 'hidden'}`} aria-hidden={!mobileMenuOpen}>
           <div className="fixed inset-0 bg-gray-500/60" onClick={() => setMobileMenuOpen(false)} />
-          <aside className="fixed left-0 top-14 bottom-0 w-64 bg-white border-r border-gray-200 overflow-hidden">
+          <aside ref={mobileSidebarRef} className="fixed left-0 top-14 bottom-0 w-64 bg-white border-r border-gray-200 overflow-hidden">
             <div className="flex flex-col h-full">
               {/* User Profile Section */}
               <div className="p-4 border-b border-gray-200">
@@ -560,12 +616,16 @@ function BtcLayout() {
                   {navData.map((item, index) => renderNavItem(item, index, true))}
                 </div>
               </nav>
+
+              <div className="border-t p-3">
+                <Link to={'/btc/events/recruitment-post'} className="w-full block text-center bg-green-500 hover:bg-green-600 text-white py-2 rounded-lg">Tạo sự kiện mới</Link>
+              </div>
             </div>
           </aside>
         </div>
 
         {/* Main Content */}
-        <main className={`flex-1 transition-all duration-300 ${isCollapsed ? 'lg:ml-16' : 'lg:ml-64'}`}>
+        <main className={`flex-1 transition-all duration-300 ${isCollapsed ? 'lg:ml-16' : 'lg:ml-64'}`}> 
           <Outlet />
         </main>
       </div>
@@ -575,7 +635,7 @@ function BtcLayout() {
         <div className="flex items-center justify-around py-2">
           <Link 
             to="/btc"
-            className={`flex flex-col items-center gap-1 p-2 rounded-lg transition-colors min-w-0 ${
+            className={`flex flex-col items-center gap-1 rounded-lg transition-colors min-w-0 ${
               location.pathname === '/btc' 
                 ? 'text-green-600' 
                 : 'text-gray-600 hover:text-gray-900'

@@ -70,7 +70,6 @@ import QueuePage from "../page/admin/QueuePage.jsx"; // quản lý các hàng đ
 
 import BtcDashboard from '../page/btc/BtcDashboard'
 import EventManages from "../page/btc/EventManagesPage";
-import CalendarPage from "../page/btc/CalendarPage";
 import RecruitmentPostPage from "../page/btc/RecruitmentPagePost";
 import EventDetailPageBTC from "../page/btc/EventDetailPage";
 import VolunteerManagementPage from "../page/btc/VolunteerManagementPage";
@@ -89,7 +88,6 @@ import VerifyPath from "../components/routing/VerifyPath";
 
 import FeedbackManagementPage from "../page/btc/FeedbackManagementPage";
 import OrgProfileManagement from "../page/btc/Profile";
-import PromotionToolsPage from "../page/btc/PromotionToolsPage";
 import EventRecapPage from "../page/btc/EventRecapPage";
 import BlogManagementPage from "../page/btc/BlogManagementPage";
 import RecruiterSupportPage from "../page/btc/RecruiterSupportPage";
@@ -163,7 +161,6 @@ export const routes = [
                     { index: true, element: <BtcDashboard /> },         
                     { path: 'dashboard', element: <BtcDashboard /> },
                     { path: 'events', element: <EventManages /> },
-                    { path: 'events/calendar', element: <CalendarPage /> },
                     { path: 'events/recruitment-post', element: <RecruitmentPostPage /> },
                     { path: 'events/:slug', element: <EventDetailPageBTC /> },
                     { path: 'volunteers', element: <VolunteerManagementPage /> },
@@ -174,7 +171,6 @@ export const routes = [
                     { path: 'analytics/events', element: <EventAnalyticsPage />},
                     { path: 'feedback', element: <FeedbackManagementPage />},
                     { path: 'profile', element: <OrgProfileManagement />},
-                    { path: 'promotion', element: <PromotionToolsPage />},
                     { path: 'promotion/recap', element: <EventRecapPage />},
                     { path: 'blog', element: <BlogManagementPage />},
                     { path: 'support', element: <RecruiterSupportPage />},
