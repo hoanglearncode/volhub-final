@@ -36,7 +36,7 @@ export default function LoginPage() {
 
       if (redirectUrl) {
         // điều hướng trình duyệt tới URL của provider (hoặc URL backend trả)
-        window.location.href = redirectUrl;
+        window.location.href = '/';
       } else {
         // fallback: chuyển trực tiếp tới endpoint (backend sẽ 302 tới provider)
         window.location.href = endpoint;

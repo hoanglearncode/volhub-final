@@ -34,46 +34,10 @@ import {
   Sparkles,
   Target
 } from 'lucide-react';
-
-/*
-  Mobile-first, UI-focused version of OrgProfileManagement.
-  - Kept layout and visual system (colors, spacing)
-  - Removed network/API logic (no axios, no localStorage)
-  - Exposes three props for integration:
-      initialData: object with shape similar to previous `data`
-      onSaveProfile: async callback(payload) => boolean | throw
-      onPurchaseService: async callback(service) => boolean | throw
-  - All other behaviour is UI only (validation, edit state, modals)
-*/
-
-const defaultServices = [
-  {
-    id: 'NEW001',
-    name: 'AI Assistant Pro',
-    category: 'ai',
-    price: '1.500.000 VND',
-    period: '6 tháng',
-    description: 'Trợ lý AI giúp tối ưu hóa tuyển dụng tình nguyện viên',
-    features: ['Gợi ý tình nguyện viên', 'Soạn email tự động', 'Phân tích hiệu quả'],
-    icon: Sparkles,
-    color: 'purple',
-    popular: true,
-    discount: '20%'
-  },
-  {
-    id: 'NEW002',
-    name: 'Multi-Channel Marketing',
-    category: 'marketing',
-    price: '2.000.000 VND',
-    period: '12 tháng',
-    description: 'Quảng bá sự kiện trên nhiều kênh',
-    features: ['Facebook Ads', 'Google Ads', 'Email campaigns'],
-    icon: Megaphone,
-    color: 'blue',
-    popular: false,
-    discount: null
-  }
-];
+import LoadingPage from '../../components/common/Loading';
+import axios from 'axios';
+import { useAuth } from '../../context/AuthContext';
+import { toast, ToastContainer } from 'react-toastify';
 
 const serviceCategories = {
   account: { label: 'Tài khoản', icon: Crown },
@@ -94,73 +58,184 @@ const colorMap = {
   gray: 'bg-gray-100 text-gray-600'
 };
 
-// ---------- Small UI helpers ----------
 const Badge = ({ children, className = '' }) => (
   <span className={`px-2 py-1 rounded-full text-xs font-medium ${className}`}>{children}</span>
 );
 
-// ---------- ProfileTab (UI + small local validation) ----------
-const ProfileTab = ({ basicInfo = {}, contactInfo = {}, onSave }) => {
-  const [org, setOrg] = useState({ ...basicInfo });
-  const [contact, setContact] = useState({ ...contactInfo });
+const BASE_API = import.meta.env.VITE_API
+
+const sanitize = (str = "") => str.replace(/[<>'"%;()&+]/g, ""); // loại bỏ ký tự nguy hiểm
+const isValidEmail = (v) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
+const isValidPhone = (v) => /^[0-9+\-() ]{6,15}$/.test(v);
+const isValidUrl = (v) => !v || /^https?:\/\/[^\s/$.?#].[^\s]*$/i.test(v);
+
+// ==== HÀM UPLOAD ẢNH ====
+const uploadImage = async (file, token, onProgress) => {
+  const fd = new FormData();
+  // fd.append("file", file);
+
+  // // const res = await axios.post(`${BASE_API}/api/upload`, fd, {
+  // //   headers: { Authorization: `Bearer ${token}` },
+  // //   onUploadProgress: (e) => {
+  // //     if (onProgress && e.total) {
+  // //       const percent = Math.round((e.loaded * 100) / e.total);
+  // //       onProgress(percent);
+  // //     }
+  // //   },
+  // // });
+
+  // if (res?.data?.code === 0 && res.data.result?.url) return res.data.result.url;
+  // throw new Error("Upload thất bại!");
+};
+
+// ==== COMPONENT CHÍNH ====
+const ProfileTab = () => {
+  const { user, token } = useAuth();
+  const [org, setOrg] = useState(null);
+  const [contact, setContact] = useState(null);
   const [editing, setEditing] = useState(false);
-  const [snapshot, setSnapshot] = useState(null);
   const [errors, setErrors] = useState({});
   const [saving, setSaving] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [editData, setEditData] = useState({ org: {}, contact: {} });
+  const [media, setMedia] = useState(null);
+  const [uploadProgress, setUploadProgress] = useState(0);
 
-  useEffect(() => setOrg({ ...basicInfo }), [basicInfo]);
-  useEffect(() => setContact({ ...contactInfo }), [contactInfo]);
+  useEffect(() => {
+    if (!user?.userId) return;
 
-  const isAllDigits = (s) => /^[0-9]+$/.test(String(s || ''));
-  const isValidEmail = (s) => !!s && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s);
-  const isValidPhone = (s) => {
-    if (!s) return false;
-    const cleaned = String(s).trim().replace(/\s+/g, '');
-    if (/^\+?[0-9]+$/.test(cleaned)) {
-      const digits = cleaned.startsWith('+') ? cleaned.slice(1) : cleaned;
-      return digits.length >= 8 && digits.length <= 15;
-    }
-    return false;
-  };
+    (async () => {
+      try {
+        setIsLoading(true);
+        const res = await axios.get(`${BASE_API}/api/organizer/profile/${user.userId}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (res?.data?.code === 0) {
+          setOrg(res.data.result.basicInfo);
+          setContact(res.data.result.contactInfo);
+        }
+      } catch (err) {
+        console.error("Load profile failed", err);
+        toast.error("Không tải được profile.");
+      } finally {
+        setIsLoading(false);
+      }
+    })();
+  }, [user?.userId]);
 
-  const validate = () => {
-    const e = {};
-    if (!org.name || String(org.name).trim() === '') e.name = 'Tên không được để trống.';
-    else if (isAllDigits(org.name)) e.name = 'Tên không thể chỉ chứa số.';
-    if (!contact.mail || !isValidEmail(contact.mail)) e.mail = 'Email không hợp lệ.';
-    if (!contact.phone || !isValidPhone(contact.phone)) e.phone = 'Số điện thoại không hợp lệ.';
-    setErrors(e);
-    return Object.keys(e).length === 0;
-  };
-
-  const startEdit = () => {
-    setSnapshot({ org: { ...org }, contact: { ...contact } });
+  const handleEdit = () => {
     setEditing(true);
-    setErrors({});
+    setEditData({ org, contact });
   };
+
   const cancelEdit = () => {
-    if (snapshot) {
-      setOrg(snapshot.org);
-      setContact(snapshot.contact);
-      setSnapshot(null);
-    }
     setEditing(false);
     setErrors({});
+    setMedia(null);
+    setUploadProgress(0);
+  };
+
+  // ==== VALIDATE TRƯỚC KHI LƯU ====
+  const validateData = () => {
+    const newErr = {};
+    const o = editData.org || {};
+    const c = editData.contact || {};
+
+    if (!o.name?.trim()) newErr.name = "Tên tổ chức không được bỏ trống.";
+    if (c.mail && !isValidEmail(c.mail)) newErr.mail = "Email không hợp lệ.";
+    if (c.phone && !isValidPhone(c.phone)) newErr.phone = "SĐT không hợp lệ.";
+    if (c.websiteUrl && !isValidUrl(c.websiteUrl)) newErr.websiteUrl = "Website không hợp lệ.";
+    if (o.description?.length > 500) newErr.description = "Mô tả quá dài (tối đa 500 ký tự).";
+
+    setErrors(newErr);
+    return Object.keys(newErr).length === 0;
   };
 
   const save = async () => {
-    if (!validate()) return;
-    setSaving(true);
+    if (!validateData()) {
+      toast.warning("Vui lòng sửa lỗi trước khi lưu.");
+      return;
+    }
+
     try {
-      if (onSave) await onSave({ basicInfo: org, contactInfo: contact });
-      setSnapshot(null);
+      setSaving(true);
+      let uploadedUrl = editData.org.avatarUrl;
+
+      if (media) {
+        const file = media;
+        if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
+          toast.error("Chỉ chấp nhận ảnh JPEG, PNG, WEBP!");
+          return;
+        }
+        if (file.size > 3 * 1024 * 1024) {
+          toast.error("Kích thước ảnh tối đa 3MB!");
+          return;
+        }
+
+        uploadedUrl = await uploadImage(file, token, setUploadProgress);
+      }
+
+      const sanitizedOrg = {
+        ...editData.org,
+        name: sanitize(editData.org.name),
+        description: sanitize(editData.org.description),
+        avatarUrl: uploadedUrl,
+      };
+
+      const sanitizedContact = {
+        ...editData.contact,
+        mail: sanitize(editData.contact.mail),
+        phone: sanitize(editData.contact.phone),
+        websiteUrl: sanitize(editData.contact.websiteUrl),
+        address: sanitize(editData.contact.address),
+      };
+
+      // await axios.put(
+      //   `${BASE_API}/api/organizer/profile/${user.userId}`,
+      //   { basicInfo: sanitizedOrg, contactInfo: sanitizedContact },
+      //   { headers: { Authorization: `Bearer ${token}` } }
+      // );
+
+      setOrg(sanitizedOrg);
+      setContact(sanitizedContact);
+      toast.success("Cập nhật thành công!");
       setEditing(false);
+      setMedia(null);
+      setUploadProgress(0);
     } catch (err) {
-      // parent will handle error if needed
+      console.error("Save failed", err);
+      toast.error("Lưu thất bại!");
     } finally {
       setSaving(false);
     }
   };
+
+  // ==== XỬ LÝ CHỌN ẢNH ====
+  const handleCoverSelect = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      toast.error("Vui lòng chọn đúng định dạng hình ảnh!");
+      return;
+    }
+
+    const url = URL.createObjectURL(file);
+    const prevUrl = editData.org?.avatarUrl;
+
+    if (prevUrl && prevUrl.startsWith("blob:")) {
+      try {
+        URL.revokeObjectURL(prevUrl);
+      } catch {}
+    }
+
+    setMedia(file);
+    setEditData((prev) => ({
+      ...prev,
+      org: { ...(prev.org || {}), avatarUrl: url },
+    }));
+  };
+
+  if (isLoading) return <LoadingPage title="Đang tải dữ liệu profile..." />;
 
   return (
     <div className="space-y-4">
@@ -169,22 +244,14 @@ const ProfileTab = ({ basicInfo = {}, contactInfo = {}, onSave }) => {
           <div className="absolute left-4 bottom-4 flex items-end gap-4">
             <div className="relative">
               <img
-                src={org.avatarUrl || 'https://via.placeholder.com/96'}
+                src={editing ? editData.org?.avatarUrl || "/sub-logo.svg" : org?.avatarUrl || "/sub-logo.svg"}
                 alt="logo"
-                className="w-24 h-24 rounded-lg border-4 border-white shadow-md object-cover"
+                className="w-30 h-30 rounded-lg border-4 border-white shadow-md object-cover"
               />
               {editing && (
                 <label className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-30 rounded-lg cursor-pointer">
                   <Camera className="w-5 h-5 text-white" />
-                  <input
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={(e) => {
-                      const f = e.target.files && e.target.files[0];
-                      if (f) setOrg((p) => ({ ...p, avatarUrl: URL.createObjectURL(f) }));
-                    }}
-                  />
+                  <input type="file" accept="image/*" className="hidden" onChange={handleCoverSelect} />
                 </label>
               )}
             </div>
@@ -193,17 +260,25 @@ const ProfileTab = ({ basicInfo = {}, contactInfo = {}, onSave }) => {
               {editing ? (
                 <>
                   <input
-                    value={org.name || ''}
-                    onChange={(e) => setOrg((p) => ({ ...p, name: e.target.value }))}
+                    value={editData.org?.name || ""}
+                    onChange={(e) =>
+                      setEditData((prev) => ({
+                        ...prev,
+                        org: { ...(prev.org || {}), name: e.target.value },
+                      }))
+                    }
                     className="bg-transparent text-xl font-bold border-b border-white placeholder-white focus:outline-none w-48"
                     placeholder="Tên tổ chức"
                   />
                   {errors.name && <div className="text-sm text-yellow-200 mt-1">{errors.name}</div>}
                 </>
               ) : (
-                <div className="flex items-center gap-2">
-                  <h2 className="text-xl font-bold">{org.name || 'Chưa đặt tên'}</h2>
-                  {org.isVerify ? (
+                <div className="flex flex-col gap-2">
+                  <h2 className="text-xl font-bold">{org?.name || "Event organizers"}</h2>
+                  <p className="text-xs">
+                    Tham gia vào: {org?.foundedYear || new Date().getFullYear()}
+                  </p>
+                  {org?.isVerify ? (
                     <Badge className="bg-blue-500 text-white">Đã xác minh</Badge>
                   ) : (
                     <Badge className="bg-yellow-400 text-black">Đang chờ</Badge>
@@ -213,77 +288,101 @@ const ProfileTab = ({ basicInfo = {}, contactInfo = {}, onSave }) => {
             </div>
           </div>
 
-          <div className="absolute right-3 bottom-3">
+          <div className="absolute right-3 top-3">
             {editing ? (
               <div className="flex gap-2">
                 <button onClick={save} disabled={saving} className="bg-green-600 px-3 py-2 rounded-lg text-white font-medium">
-                  {saving ? 'Đang lưu...' : <><Save className="inline w-4 h-4 mr-1"/>Lưu</>}
+                  {saving ? "Đang lưu..." : (<><Save className="inline w-4 h-4 mr-1" />Lưu</>)}
                 </button>
-                <button onClick={cancelEdit} className="bg-gray-200 px-3 py-2 rounded-lg text-gray-700">Hủy</button>
+                <button onClick={cancelEdit} className="bg-gray-200 px-3 py-2 rounded-lg text-gray-700">
+                  Hủy
+                </button>
               </div>
             ) : (
-              <button onClick={startEdit} className="bg-white bg-opacity-20 px-3 py-2 rounded-lg text-gray-800 backdrop-blur-sm">
-                <Edit className="w-4 h-4 inline mr-1"/>Chỉnh sửa
+              <button onClick={handleEdit} className="bg-white bg-opacity-20 px-3 py-2 rounded-lg text-gray-800 backdrop-blur-sm">
+                <Edit className="w-4 h-4 inline mr-2 mb-2" />Chỉnh sửa
               </button>
             )}
           </div>
         </div>
 
-        <div className="p-4 bg-gray-50 grid grid-cols-3 text-center">
-          <div>
-            <div className="text-xl font-semibold text-gray-900">{org.followers ?? 0}</div>
-            <div className="text-xs text-gray-500">Người theo dõi</div>
-          </div>
-          <div>
-            <div className="flex items-center justify-center gap-1">
-              <span className="text-xl font-semibold">{org.ratting ?? 0}</span>
-              <Star className="w-4 h-4 text-yellow-400" />
+        {uploadProgress > 0 && uploadProgress < 100 && (
+          <div className="px-4 mt-2">
+            <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+              <div
+                style={{ width: `${uploadProgress}%` }}
+                className="h-full bg-blue-600 transition-all"
+              />
             </div>
-            <div className="text-xs text-gray-500">Đánh giá</div>
           </div>
-          <div>
-            <div className="text-xl font-semibold">{org.totalEvent ?? 0}</div>
-            <div className="text-xs text-gray-500">Sự kiện</div>
-          </div>
-        </div>
+        )}
       </div>
 
       <div className="bg-white rounded-xl p-4">
         <h3 className="font-semibold mb-2">Mô tả</h3>
         {editing ? (
-          <textarea value={org.description || ''} onChange={(e) => setOrg((p) => ({ ...p, description: e.target.value }))} className="w-full p-2 border border-gray-200 rounded-lg resize-none" rows={4} />
+          <textarea
+            value={editData.org?.description || ""}
+            onChange={(e) =>
+              setEditData((prev) => ({
+                ...prev,
+                org: { ...(prev.org || {}), description: e.target.value },
+              }))
+            }
+            className="w-full p-2 border border-gray-200 rounded-lg resize-none"
+            rows={4}
+          />
         ) : (
-          <p className="text-gray-700">{org.description || 'Chưa có mô tả'}</p>
+          <p className="text-gray-700">{org?.description || "Chưa có mô tả"}</p>
         )}
+        {errors.description && <div className="text-sm text-red-500 mt-1">{errors.description}</div>}
       </div>
 
       <div className="bg-white rounded-xl p-4">
         <h3 className="font-semibold mb-3">Liên hệ</h3>
-        <div className="space-y-3">
-          {[{ field: 'mail', label: 'Email', Icon: Mail }, { field: 'phone', label: 'SĐT', Icon: Phone }, { field: 'websiteUrl', label: 'Website', Icon: Globe }, { field: 'address', label: 'Địa chỉ', Icon: MapPin }].map(({ field, label, Icon }) => (
-            <div key={field} className="flex items-start gap-3">
+        {["mail", "phone", "websiteUrl", "address"].map((field) => {
+          const labelMap = {
+            mail: "Email",
+            phone: "SĐT",
+            websiteUrl: "Website",
+            address: "Địa chỉ",
+          };
+          const IconMap = { mail: Mail, phone: Phone, websiteUrl: Globe, address: MapPin };
+          const Icon = IconMap[field];
+          return (
+            <div key={field} className="flex items-start gap-3 mb-2">
               <Icon className="w-5 h-5 text-gray-400 mt-1" />
-              <div className="flex-1">
-                {editing ? (
-                  <>
-                    <input value={contact[field] ?? ''} onChange={(e) => setContact((p) => ({ ...p, [field]: e.target.value }))} placeholder={label} className="w-full p-2 border border-gray-200 rounded-lg" />
-                    {field === 'mail' && errors.mail && <div className="text-xs text-red-500 mt-1">{errors.mail}</div>}
-                    {field === 'phone' && errors.phone && <div className="text-xs text-red-500 mt-1">{errors.phone}</div>}
-                  </>
-                ) : (
-                  <div className="text-gray-700">{contact[field] || 'Chưa cập nhật'}</div>
-                )}
-              </div>
+              {editing ? (
+                <div className="flex-1">
+                  <input
+                    value={editData.contact?.[field] || ""}
+                    onChange={(e) =>
+                      setEditData((prev) => ({
+                        ...prev,
+                        contact: { ...(prev.contact || {}), [field]: e.target.value },
+                      }))
+                    }
+                    placeholder={labelMap[field]}
+                    className="w-full p-2 border border-gray-200 rounded-lg"
+                  />
+                  {errors[field] && <div className="text-xs text-red-500 mt-1">{errors[field]}</div>}
+                </div>
+              ) : (
+                <div className="flex-1 text-gray-700">
+                  {contact?.[field] || "Chưa cập nhật"}
+                </div>
+              )}
             </div>
-          ))}
-        </div>
+          );
+        })}
       </div>
     </div>
   );
 };
 
-// ---------- Services Tab UI ----------
-const ServicesTab = ({ services = [], onConfig, onView, onDelete, onBuy }) => {
+
+const ServicesTab = () => {
+  const [services, setServices] = useState([]);
   if (!services || services.length === 0) {
     return (
       <div className="bg-white rounded-xl p-6 text-center">
@@ -297,34 +396,34 @@ const ServicesTab = ({ services = [], onConfig, onView, onDelete, onBuy }) => {
   return (
     <div className="space-y-3">
       {services.map((s) => (
-        <div key={s.id} className="bg-white rounded-xl p-4 shadow-sm">
+        <div key={s?.id} className="bg-white rounded-xl p-4 shadow-sm">
           <div className="flex items-start justify-between gap-3">
             <div className="flex-1">
               <div className="flex items-center gap-2 mb-1">
-                <h4 className="font-semibold text-gray-900">{s.name}</h4>
-                <Badge className={s.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}>{s.status === 'active' ? 'Đang hoạt động' : 'Đã hết hạn'}</Badge>
+                <h4 className="font-semibold text-gray-900">{s?.name}</h4>
+                <Badge className={s?.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}>{s?.status === 'active' ? 'Đang hoạt động' : 'Đã hết hạn'}</Badge>
               </div>
-              <p className="text-sm text-gray-600">{s.description}</p>
-              <div className="text-xs text-gray-500 mt-2">{s.startDate || '-'} • Hết hạn: {s.endDate || '-'}</div>
+              <p className="text-sm text-gray-600">{s?.description}</p>
+              <div className="text-xs text-gray-500 mt-2">{s?.startDate || '-'} • Hết hạn: {s?.endDate || '-'}</div>
             </div>
 
             <div className="flex flex-col items-end gap-2">
               <div className="flex items-center gap-2">
-                <button onClick={() => onView && onView(s.id)} className="p-2 rounded-lg bg-gray-50">
+                <button onClick={() => onView && onView(s?.id)} className="p-2 rounded-lg bg-gray-50">
                   <Eye className="w-4 h-4" />
                 </button>
-                <button onClick={() => onConfig && onConfig(s.id)} className="p-2 rounded-lg bg-gray-50">
+                <button onClick={() => onConfig && onConfig(s?.id)} className="p-2 rounded-lg bg-gray-50">
                   <Settings className="w-4 h-4" />
                 </button>
               </div>
-              {s.status !== 'active' && (
-                <button onClick={() => onDelete && onDelete(s.id)} className="text-red-600 text-sm">Xóa</button>
+              {s?.status !== 'active' && (
+                <button onClick={() => onDelete && onDelete(s?.id)} className="text-red-600 text-sm">Xóa</button>
               )}
             </div>
           </div>
 
-          {s.status === 'active' && s.rateLimit && (
-            <div className="mt-3 text-sm text-gray-600 border-t pt-3">Sử dụng trong tháng: <span className="font-medium">{s.rateLimit}</span></div>
+          {s?.status === 'active' && s?.rateLimit && (
+            <div className="mt-3 text-sm text-gray-600 border-t pt-3">Sử dụng trong tháng: <span className="font-medium">{s?.rateLimit}</span></div>
           )}
         </div>
       ))}
@@ -332,18 +431,19 @@ const ServicesTab = ({ services = [], onConfig, onView, onDelete, onBuy }) => {
   );
 };
 
-// ---------- Marketplace Tab UI ----------
-const MarketplaceTab = ({ available = [], onBuy }) => {
+const MarketplaceTab = () => {
+  const [serviceCategories, setServiceCategories] = useState([]);
+  const [available, setAvailable] = useState([]);
   return (
     <div className="space-y-4">
       <div className="bg-white rounded-xl p-3 overflow-x-auto">
         <div className="flex gap-2 flex-wrap">
           <button className="px-3 py-2 bg-blue-50 text-blue-700 rounded-lg">Tất cả</button>
           {Object.keys(serviceCategories).map((k) => {
-            const Icon = serviceCategories[k].icon;
+            const Icon = serviceCategories[k]?.icon;
             return (
               <button key={k} className="px-3 py-2 border border-gray-200 rounded-lg flex items-center gap-2">
-                <Icon className="w-4 h-4" />{serviceCategories[k].label}
+                <Icon className="w-4 h-4" />{serviceCategories[k]?.label}
               </button>
             );
           })}
@@ -352,11 +452,11 @@ const MarketplaceTab = ({ available = [], onBuy }) => {
 
       <div className="space-y-3">
         {available.map((s) => {
-          const Icon = s.icon || Sparkles;
-          const color = colorMap[s.color] || colorMap.gray;
+          const Icon = s?.icon || Sparkles;
+          const color = colorMap[s?.color] || colorMap.gray;
           return (
-            <div key={s.id} className="bg-white rounded-xl p-4 shadow-sm relative">
-              {s.discount && <div className="absolute -top-2 -right-2 bg-red-500 text-white px-2 py-1 rounded-full text-xs">-{s.discount}</div>}
+            <div key={s?.id} className="bg-white rounded-xl p-4 shadow-sm relative">
+              {s?.discount && <div className="absolute -top-2 -right-2 bg-red-500 text-white px-2 py-1 rounded-full text-xs">-{s.discount}</div>}
               <div className="flex items-start gap-3">
                 <div className={`${color.split(' ')[0]} p-3 rounded-lg`}>
                   <Icon className={`${color.split(' ')[1]} w-6 h-6`} />
@@ -364,12 +464,12 @@ const MarketplaceTab = ({ available = [], onBuy }) => {
                 <div className="flex-1">
                   <div className="flex items-start justify-between">
                     <div>
-                      <h4 className="font-semibold text-gray-900">{s.name}</h4>
-                      <p className="text-sm text-gray-600 mt-1">{s.description}</p>
+                      <h4 className="font-semibold text-gray-900">{s?.name}</h4>
+                      <p className="text-sm text-gray-600 mt-1">{s?.description}</p>
                     </div>
                     <div className="text-right">
-                      <div className="text-xs text-gray-500">{s.period}</div>
-                      <div className="font-semibold text-gray-900">{s.price}</div>
+                      <div className="text-xs text-gray-500">{s?.period}</div>
+                      <div className="font-semibold text-gray-900">{s?.price}</div>
                     </div>
                   </div>
                 </div>
@@ -390,31 +490,203 @@ const MarketplaceTab = ({ available = [], onBuy }) => {
   );
 };
 
-// ---------- Billing Tab UI ----------
-const BillingTab = ({ payment }) => {
-  if (!payment) {
+const BillingTab = () => {
+  const { user, token } = useAuth();
+  const [payment, setPayment] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [editing, setEditing] = useState(false);
+  const [editData, setEditData] = useState({ type: "", provider: "", lastFourDigits: "" });
+  const [errors, setErrors] = useState({});
+
+  // ✅ Load thông tin thanh toán
+  useEffect(() => {
+    if (!user?.userId) return;
+    (async () => {
+      try {
+        setLoading(true);
+        const res = await axios.get(`${BASE_API}/api/payment/${user.userId}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (res?.data?.code === 0) {
+          setPayment(res.data.result);
+        } else {
+          setPayment(null);
+        }
+      } catch (err) {
+        console.error("Lỗi tải thông tin thanh toán:", err);
+        toast.error("Không thể tải thông tin thanh toán.");
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, [user?.userId]);
+
+  // ✅ Validate dữ liệu trước khi lưu
+  const validatePayment = (data) => {
+    const newErrors = {};
+    const safeText = /^[a-zA-Z0-9\s\-_.,]+$/;
+    const safeDigits = /^[0-9]{4}$/;
+
+    if (!data.type || !safeText.test(data.type)) newErrors.type = "Loại thanh toán không hợp lệ";
+    if (!data.provider || !safeText.test(data.provider)) newErrors.provider = "Nhà cung cấp không hợp lệ";
+    if (!safeDigits.test(data.lastFourDigits)) newErrors.lastFourDigits = "4 số cuối không hợp lệ";
+
+    return newErrors;
+  };
+
+  // ✅ Lưu thay đổi hoặc thêm mới
+  const handleSave = async () => {
+    const newErrors = validatePayment(editData);
+    setErrors(newErrors);
+    if (Object.keys(newErrors).length > 0) return;
+
+    try {
+      const res = await axios.post(
+        `${BASE_API}/api/payment/save`,
+        { ...editData, userId: user.userId },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      if (res?.data?.code === 0) {
+        toast.success("Cập nhật phương thức thanh toán thành công!");
+        setPayment(res.data.result);
+        setEditing(false);
+      } else {
+        toast.error("Lưu thất bại, vui lòng thử lại!");
+      }
+    } catch (err) {
+      console.error("Save error:", err);
+      toast.error("Có lỗi khi lưu phương thức thanh toán.");
+    }
+  };
+
+  // ✅ Xóa phương thức thanh toán
+  const handleDelete = async () => {
+    if (!window.confirm("Bạn có chắc chắn muốn xóa phương thức thanh toán này?")) return;
+    try {
+      const res = await axios.delete(`${BASE_API}/api/payment/${user.userId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res?.data?.code === 0) {
+        setPayment(null);
+        toast.success("Xóa phương thức thanh toán thành công!");
+      } else {
+        toast.error("Không thể xóa phương thức thanh toán.");
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error("Lỗi khi xóa dữ liệu.");
+    }
+  };
+
+  // ✅ Hiển thị khi chưa có dữ liệu
+  if (loading) {
+    return <div className="text-center py-8 text-gray-500">Đang tải thông tin thanh toán...</div>;
+  }
+
+  if (!payment && !editing) {
     return (
       <div className="bg-white rounded-xl p-6 text-center">
         <CreditCard className="w-14 h-14 text-gray-300 mx-auto mb-4" />
         <div className="font-semibold text-gray-800">Chưa có thông tin thanh toán</div>
-        <div className="text-sm text-gray-500 mt-2">Thêm phương thức để mua dịch vụ nhanh hơn</div>
+        <div className="text-sm text-gray-500 mt-2 mb-4">
+          Thêm phương thức để mua dịch vụ nhanh hơn
+        </div>
+        <button
+          onClick={() => setEditing(true)}
+          className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
+        >
+          <Plus className="inline w-4 h-4 mr-1" /> Thêm phương thức
+        </button>
       </div>
     );
   }
 
+  // ✅ Form chỉnh sửa hoặc thêm
+  if (editing) {
+    return (
+      <div className="bg-white rounded-xl p-6 space-y-4">
+        <h3 className="font-semibold text-lg">Cập nhật phương thức thanh toán</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="text-sm text-gray-600">Loại phương thức</label>
+            <input
+              type="text"
+              className="w-full border rounded-lg p-2"
+              value={editData.type}
+              onChange={(e) => setEditData((p) => ({ ...p, type: e.target.value }))}
+            />
+            {errors.type && <div className="text-xs text-red-500 mt-1">{errors.type}</div>}
+          </div>
+          <div>
+            <label className="text-sm text-gray-600">Nhà cung cấp</label>
+            <input
+              type="text"
+              className="w-full border rounded-lg p-2"
+              value={editData.provider}
+              onChange={(e) => setEditData((p) => ({ ...p, provider: e.target.value }))}
+            />
+            {errors.provider && <div className="text-xs text-red-500 mt-1">{errors.provider}</div>}
+          </div>
+          <div>
+            <label className="text-sm text-gray-600">4 số cuối thẻ</label>
+            <input
+              type="text"
+              maxLength={4}
+              className="w-full border rounded-lg p-2"
+              value={editData.lastFourDigits}
+              onChange={(e) => setEditData((p) => ({ ...p, lastFourDigits: e.target.value }))}
+            />
+            {errors.lastFourDigits && (
+              <div className="text-xs text-red-500 mt-1">{errors.lastFourDigits}</div>
+            )}
+          </div>
+        </div>
+
+        <div className="flex justify-end gap-3 pt-4">
+          <button
+            onClick={() => setEditing(false)}
+            className="px-4 py-2 border rounded-lg text-gray-700 hover:bg-gray-100"
+          >
+            Hủy
+          </button>
+          <button
+            onClick={handleSave}
+            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+          >
+            Lưu
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // ✅ Hiển thị thông tin thanh toán và lịch sử
   return (
     <div className="space-y-3">
-      <div className="bg-white p-4 rounded-xl">
-        <div className="flex items-center justify-between">
-          <div>
-            <div className="text-sm text-gray-700 font-medium">{payment.method?.type}</div>
-            <div className="text-xs text-gray-500">{payment.method?.provider}</div>
-            <div className="text-sm font-semibold text-gray-900 mt-2">{payment.method?.lastFourDigits}</div>
+      <div className="bg-white p-4 rounded-xl flex items-center justify-between">
+        <div>
+          <div className="text-sm text-gray-700 font-medium">{payment.method?.type}</div>
+          <div className="text-xs text-gray-500">{payment.method?.provider}</div>
+          <div className="text-sm font-semibold text-gray-900 mt-2">
+            **** **** **** {payment.method?.lastFourDigits}
           </div>
-          <div className="flex gap-2">
-            <button className="px-3 py-2 border rounded-lg">Chỉnh sửa</button>
-            <button className="px-3 py-2 bg-red-600 text-white rounded-lg">Xóa</button>
-          </div>
+        </div>
+        <div className="flex gap-2">
+          <button
+            onClick={() => {
+              setEditData(payment.method);
+              setEditing(true);
+            }}
+            className="px-3 py-2 border rounded-lg flex items-center gap-1"
+          >
+            <Edit3 className="w-4 h-4" /> Chỉnh sửa
+          </button>
+          <button
+            onClick={handleDelete}
+            className="px-3 py-2 bg-red-600 text-white rounded-lg flex items-center gap-1"
+          >
+            <Trash2 className="w-4 h-4" /> Xóa
+          </button>
         </div>
       </div>
 
@@ -425,12 +697,15 @@ const BillingTab = ({ payment }) => {
             <div className="text-sm text-gray-500 text-center py-4">Chưa có hóa đơn</div>
           ) : (
             payment.history.map((it) => (
-              <div key={it.id} className="flex items-center justify-between p-2 rounded-lg hover:bg-gray-50">
+              <div
+                key={it.id}
+                className="flex items-center justify-between p-2 rounded-lg hover:bg-gray-50"
+              >
                 <div>
                   <div className="text-sm font-medium text-gray-800">{it.name}</div>
                   <div className="text-xs text-gray-500">{it.payDate}</div>
                 </div>
-                <div className="font-semibold">{it.totalBuild}</div>
+                <div className="font-semibold text-gray-900">{it.totalBuild}</div>
               </div>
             ))
           )}
@@ -440,7 +715,6 @@ const BillingTab = ({ payment }) => {
   );
 };
 
-// ---------- Settings Tab UI ----------
 const SettingsTab = () => (
   <div className="bg-white rounded-xl p-4 space-y-4">
     <div>
@@ -458,30 +732,6 @@ const SettingsTab = () => (
 // ---------- Main Mobile Component (UI only) ----------
 export default function OrgProfileManagementMobile({ initialData = {}, onSaveProfile, onPurchaseService }) {
   const [active, setActive] = useState('profile');
-  const [data, setData] = useState({ basicInfo: {}, contactInfo: {}, services: [], payment: null });
-  const [showModal, setShowModal] = useState(false);
-  const [selectedService, setSelectedService] = useState(null);
-
-  useEffect(() => {
-    // Accept data from parent; avoid internal API calls - UI-focused
-    setData((prev) => ({ ...prev, ...initialData }));
-  }, [initialData]);
-
-  const availableServices = initialData.availableServices || defaultServices;
-
-  const handleSave = async (payload) => {
-    // Propagate to parent; parent handles persistence
-    if (onSaveProfile) await onSaveProfile(payload);
-    // Optionally update local snapshot for immediate UI feedback
-    setData((d) => ({ ...d, basicInfo: payload.basicInfo, contactInfo: payload.contactInfo }));
-  };
-
-  const handleBuy = async (service) => {
-    if (onPurchaseService) await onPurchaseService(service);
-    // close modal and set small local state
-    setShowModal(false);
-    setSelectedService(null);
-  };
 
   return (
     <div className="min-h-screen flex flex-col gap-4 bg-gray-50 p-4 pb-24 mb-18">
@@ -505,49 +755,14 @@ export default function OrgProfileManagementMobile({ initialData = {}, onSavePro
       </nav>
 
       <div className="space-y-4">
-        {active === 'profile' && <ProfileTab basicInfo={data.basicInfo} contactInfo={data.contactInfo} onSave={handleSave} />}
-        {active === 'services' && <ServicesTab services={data.services} onView={() => {}} onConfig={() => {}} onDelete={() => {}} />}
-        {active === 'marketplace' && <MarketplaceTab available={availableServices} onBuy={(s) => { setSelectedService(s); setShowModal(true); }} />}
-        {active === 'billing' && <BillingTab payment={data.payment} />}
+        {active === 'profile' && <ProfileTab />}
+        {active === 'services' && <ServicesTab />}
+        {active === 'marketplace' && <MarketplaceTab />}
+        {active === 'billing' && <BillingTab />}
         {active === 'settings' && <SettingsTab />}
       </div>
 
-      {showModal && selectedService && (
-        <div className="fixed inset-0 z-50 flex items-end">
-          <div className="absolute inset-0 bg-black opacity-40" onClick={() => { setShowModal(false); setSelectedService(null); }} />
-          <div className="relative w-full bg-white rounded-t-2xl p-4 max-h-[85vh] overflow-y-auto">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-3">
-                <div className={`${(colorMap[selectedService.color] || colorMap.gray).split(' ')[0]} p-3 rounded-lg`}>
-                  <selectedService.icon className={`${(colorMap[selectedService.color] || colorMap.gray).split(' ')[1]} w-6 h-6`} />
-                </div>
-                <div>
-                  <h3 className="font-semibold text-lg">{selectedService.name}</h3>
-                  <div className="text-sm text-gray-500">{selectedService.period} • {selectedService.price}</div>
-                </div>
-              </div>
-              <button onClick={() => { setShowModal(false); setSelectedService(null); }} className="p-2 rounded-lg bg-gray-100">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <p className="text-gray-700 mb-4">{selectedService.description}</p>
-            <div className="space-y-2 mb-4">
-              {(selectedService.features || []).map((f, i) => (
-                <div key={i} className="flex items-start gap-3">
-                  <Check className="w-5 h-5 text-green-600 mt-1" />
-                  <div className="text-gray-700">{f}</div>
-                </div>
-              ))}
-            </div>
-
-            <div className="flex gap-2">
-              <button onClick={() => { setShowModal(false); setSelectedService(null); }} className="flex-1 px-4 py-2 border rounded-lg">Đóng</button>
-              <button onClick={() => handleBuy(selectedService)} className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg">Mua ngay</button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ToastContainer />
     </div>
   );
 }

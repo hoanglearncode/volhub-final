@@ -13,60 +13,19 @@ import axios from "axios";
 
 const API_BASE = import.meta.env.VITE_API || "";
 
-// ==================== HELPER FUNCTIONS ====================
-function formatDateTimeISO(dateStr, timeStr) {
-  if (!dateStr) return null;
-  const dateParts = dateStr.split("-").map(Number);
-  if (dateParts.length !== 3) return null;
-  let hh = "00", mm = "00", ss = "00";
-  if (timeStr) {
-    const t = timeStr.split(":");
-    hh = String(Number(t[0] || 0)).padStart(2, "0");
-    mm = String(Number(t[1] || 0)).padStart(2, "0");
-  }
-  return `${dateStr}T${hh}:${mm}:${ss}`;
-}
 
-function isValidEmail(s) {
-  if (!s) return false;
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  return emailRegex.test(String(s).trim());
-}
-
-function isValidPhone(s) {
-  if (!s) return false;
-  const cleaned = String(s).trim().replace(/\s+/g, "");
-  if (/^\+?[0-9]+$/.test(cleaned)) {
-    const digits = cleaned.startsWith("+") ? cleaned.slice(1) : cleaned;
-    return digits.length >= 8 && digits.length <= 15;
-  }
-  return false;
-}
-
-function isAllDigits(str) {
-  const s = String(str ?? "").trim().replace(/\s+/g, "");
-  return /^[0-9]+$/.test(s);
-}
-
-// ==================== MAIN COMPONENT ====================
 export default function RecruitmentEventPage() {
   const navigate = useNavigate();
   const { token } = useAuth();
-
-  // Organization Info
   const [orzInfo, setOrzInfo] = useState({});
-
-  // Form Data States
   const [media, setMedia] = useState(null);
   const [coverPreview, setCoverPreview] = useState(null);
-  
   const [basicInfo, setBasicInfo] = useState({
     title: "",
     description: "",
     category: "",
     eventType: "NON_PROFIT"
   });
-
   const [timeLocation, setTimeLocation] = useState({
     startDate: "",
     startTime: "",
@@ -77,7 +36,6 @@ export default function RecruitmentEventPage() {
     detailLocation: "",
     onlineLink: ""
   });
-
   const [requirements, setRequirements] = useState({
     volunteersNeeded: 10,
     registrationDeadline: "",
@@ -87,14 +45,12 @@ export default function RecruitmentEventPage() {
     experienceLevel: "NEWBIE",
     detail: ""
   });
-
   const [contactInfo, setContactInfo] = useState({
     coordinatorName: "",
     phone: "",
     email: "",
     alternateContact: ""
   });
-
   const [formExtras, setFormExtras] = useState({
     tags: [],
     benefits: {
@@ -114,11 +70,9 @@ export default function RecruitmentEventPage() {
     requireBackground: false,
     priority: "NORMAL"
   });
-
   const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
 
-  // ==================== CONSTANTS ====================
   const categories = ["Môi trường", "Giáo dục", "Y tế", "Cộng đồng"];
   const tagsList = ["Thiện nguyện", "Cộng đồng", "Thanh niên"];
   const benefits = [
@@ -133,7 +87,6 @@ export default function RecruitmentEventPage() {
     { value: "another", label: "Khác" }
   ];
 
-  // ==================== LOAD ORGANIZATION INFO ====================
   useEffect(() => {
     const loadOrgInfo = async () => {
       try {
@@ -150,149 +103,6 @@ export default function RecruitmentEventPage() {
     };
     loadOrgInfo();
   }, [token]);
-
-  // ==================== HANDLERS ====================
-  const handleBasicInfo = (field, value) => {
-    setBasicInfo(prev => ({ ...prev, [field]: value }));
-    if (field === "title") {
-      if (isAllDigits(value)) {
-        setErrors(prev => ({ ...prev, title: "Tiêu đề không được chỉ gồm chữ số." }));
-      } else {
-        setErrors(prev => {
-          const newErr = { ...prev };
-          delete newErr.title;
-          return newErr;
-        });
-      }
-    }
-  };
-
-  const handleTimeLocation = (field, value) => {
-    const next = { ...timeLocation, [field]: value };
-    setTimeLocation(next);
-
-    // Validation
-    const newErr = { ...errors };
-
-    if (!next.startDate) {
-      newErr.startDate = "Ngày bắt đầu là bắt buộc.";
-    } else {
-      delete newErr.startDate;
-    }
-
-    if (next.startTime && !/^([01]\d|2[0-3]):([0-5]\d)$/.test(next.startTime)) {
-      newErr.startTime = "Giờ bắt đầu không hợp lệ (HH:MM).";
-    } else {
-      delete newErr.startTime;
-    }
-
-    if (next.endTime && !next.endDate) {
-      newErr.endDate = "Vui lòng chọn ngày kết thúc khi nhập giờ kết thúc.";
-    }
-
-    if (next.startDate && next.endDate) {
-      const sd = new Date(next.startDate);
-      const ed = new Date(next.endDate);
-      if (ed < sd) {
-        newErr.endDate = "Ngày kết thúc phải không sớm hơn ngày bắt đầu.";
-      } else {
-        delete newErr.endDate;
-      }
-    }
-
-    if (next.isOnline) {
-      if (next.onlineLink) {
-        try {
-          new URL(next.onlineLink);
-          delete newErr.onlineLink;
-        } catch {
-          newErr.onlineLink = "Link tham gia không hợp lệ.";
-        }
-      }
-      delete newErr.location;
-    } else {
-      if (!next.location || !String(next.location).trim()) {
-        newErr.location = "Địa điểm là bắt buộc cho sự kiện offline.";
-      } else {
-        delete newErr.location;
-      }
-      delete newErr.onlineLink;
-    }
-
-    setErrors(newErr);
-  };
-
-  const handleRequirements = (field, value) => {
-    setRequirements(prev => ({ ...prev, [field]: value }));
-
-    const newErr = { ...errors };
-    if (field === "minAge" || field === "maxAge") {
-      const min = Number(field === "minAge" ? value : requirements.minAge);
-      const max = Number(field === "maxAge" ? value : requirements.maxAge);
-      if (min && max && min > max) {
-        newErr.minAge = "Tuổi tối thiểu không lớn hơn tuổi tối đa.";
-      } else {
-        delete newErr.minAge;
-        delete newErr.maxAge;
-      }
-    }
-    if (field === "volunteersNeeded") {
-      if (!value || Number(value) <= 0) {
-        newErr.volunteersNeeded = "Số lượng phải là số lớn hơn 0.";
-      } else {
-        delete newErr.volunteersNeeded;
-      }
-    }
-    setErrors(newErr);
-  };
-
-  const handleContact = (field, value) => {
-    setContactInfo(prev => ({ ...prev, [field]: value }));
-    const newErr = { ...errors };
-    if (field === "email") {
-      if (value && !isValidEmail(value)) {
-        newErr.email = "Email không hợp lệ.";
-      } else {
-        delete newErr.email;
-      }
-    }
-    if (field === "phone") {
-      if (value && !isValidPhone(value)) {
-        newErr.phone = "Số điện thoại không hợp lệ.";
-      } else {
-        delete newErr.phone;
-      }
-    }
-    setErrors(newErr);
-  };
-
-  const handleBenefitToggle = (name, checked) => {
-    setFormExtras(prev => ({
-      ...prev,
-      benefits: { ...prev.benefits, [name]: checked }
-    }));
-  };
-
-  const handleBenefitAmount = (value) => {
-    setFormExtras(prev => ({
-      ...prev,
-      benefits: { ...prev.benefits, allowanceAmount: Number(value || 0) }
-    }));
-  };
-
-  const handleTagAdd = (tag) => {
-    setFormExtras(prev => ({
-      ...prev,
-      tags: Array.from(new Set([...prev.tags, tag]))
-    }));
-  };
-
-  const handleTagRemove = (tag) => {
-    setFormExtras(prev => ({
-      ...prev,
-      tags: prev.tags.filter(t => t !== tag)
-    }));
-  };
 
   // ==================== COVER UPLOAD ====================
   const handleCoverSelect = (file) => {
@@ -333,41 +143,6 @@ export default function RecruitmentEventPage() {
       toast.error("Tải ảnh bìa thất bại.");
       return null;
     }
-  };
-
-  const validate = () => {
-    const newErr = {};
-
-    if (!basicInfo.title || !basicInfo.title.trim()) {
-      newErr.title = "Tiêu đề là bắt buộc.";
-    }
-    if (!basicInfo.description || !basicInfo.description.trim()) {
-      newErr.description = "Mô tả là bắt buộc.";
-    }
-    if (!basicInfo.category) {
-      newErr.category = "Danh mục là bắt buộc.";
-    }
-    if (!timeLocation.startDate) {
-      newErr.startDate = "Ngày bắt đầu là bắt buộc.";
-    }
-    if (!timeLocation.isOnline && (!timeLocation.location || !String(timeLocation.location).trim())) {
-      newErr.location = "Địa điểm là bắt buộc cho sự kiện offline.";
-    }
-    if (!contactInfo.coordinatorName || !contactInfo.coordinatorName.trim()) {
-      newErr.coordinatorName = "Tên điều phối viên là bắt buộc.";
-    }
-    if (!contactInfo.phone || !isValidPhone(contactInfo.phone)) {
-      newErr.phone = "Số điện thoại liên hệ không hợp lệ.";
-    }
-    if (!contactInfo.email || !isValidEmail(contactInfo.email)) {
-      newErr.email = "Email liên hệ không hợp lệ.";
-    }
-    if (!requirements.volunteersNeeded || Number(requirements.volunteersNeeded) <= 0) {
-      newErr.volunteersNeeded = "Số lượng tình nguyện viên phải lớn hơn 0.";
-    }
-
-    setErrors(newErr);
-    return Object.keys(newErr).length === 0;
   };
 
   const buildPayload = async () => {
@@ -585,20 +360,6 @@ export default function RecruitmentEventPage() {
                     />
                     {errors.startDate && <p className="text-xs pl-2 pt-2 text-red-500">{errors.startDate}</p>}
                   </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Giờ bắt đầu</label>
-                    <input
-                      type="time"
-                      value={timeLocation.startTime}
-                      onChange={(e) => handleTimeLocation("startTime", e.target.value)}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                    />
-                    {errors.startTime && <p className="text-xs pl-2 pt-2 text-red-500">{errors.startTime}</p>}
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Ngày kết thúc</label>
                     <input
@@ -608,17 +369,6 @@ export default function RecruitmentEventPage() {
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                     />
                     {errors.endDate && <p className="text-xs pl-2 pt-2 text-red-500">{errors.endDate}</p>}
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Giờ kết thúc</label>
-                    <input
-                      type="time"
-                      value={timeLocation.endTime}
-                      onChange={(e) => handleTimeLocation("endTime", e.target.value)}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                    />
-                    {errors.endTime && <p className="text-xs pl-2 pt-2 text-red-500">{errors.endTime}</p>}
                   </div>
                 </div>
 
@@ -890,7 +640,7 @@ export default function RecruitmentEventPage() {
           </div>
 
           {/* Sidebar */}
-          <aside className="space-y-6">
+          <aside className="space-y-6 ">
             {/* Settings */}
             <div className="bg-white rounded-xl shadow-sm p-6">
               <h3 className="text-lg font-semibold mb-4">Cài đặt</h3>
@@ -1034,7 +784,7 @@ export default function RecruitmentEventPage() {
             </div>
 
             {/* Actions */}
-            <div className="bg-white rounded-xl shadow-sm p-6">
+            <div className="bg-white rounded-xl shadow-sm p-6 ">
               <h3 className="text-lg font-semibold mb-4">Hành động</h3>
               <div className="space-y-3">
                 <button

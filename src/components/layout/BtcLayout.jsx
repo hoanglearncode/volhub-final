@@ -148,7 +148,6 @@ function BtcLayout() {
         to: "/btc/support", 
         title: "Hỗ trợ", 
         Icon: Headphones, 
-        badge: 5,
         submenu: [
           { to: "/btc/support", title: "Trung tâm hỗ trợ", Icon: HelpCircle },
           { to: "/btc/chat", title: "Chat với TNV", Icon: MessageCircle }
