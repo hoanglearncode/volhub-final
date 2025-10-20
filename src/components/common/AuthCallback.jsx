@@ -13,7 +13,7 @@ export default function AuthCallback() {
             try {
                 const params = new URLSearchParams(window.location.search);
                 const token = params.get("token");
-                const refreshToken = params.get("refreshToken");
+                const refreshToken = params.get("refresh");
                 const provider = params.get("provider");
 
                 if (!token || !refreshToken) {
