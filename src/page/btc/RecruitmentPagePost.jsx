@@ -1,5 +1,5 @@
-// RecruitmentEventPage.jsx - Simplified Version (Create Only)
-import React, { useEffect, useState } from "react";
+// RecruitmentEventPage.jsx
+import React, { useEffect, useState, useMemo } from "react";
 import {
   Calendar, Clock, MapPin, Users, Award,
   Upload, Tag, Shield, Heart, Star, Building, Phone,
@@ -12,20 +12,41 @@ import { useAuth } from "../../context/AuthContext";
 import axios from "axios";
 
 const API_BASE = import.meta.env.VITE_API || "";
+const CREATE_ENDPOINT = `${API_BASE}/events/create`; // endpoint that accepts multipart/form-data (RequestPart("event"))
 
+/* -------------------------
+  Helpers
+------------------------- */
+const formatDateTimeISO = (date, time) => {
+  if (!date) return null;
+  // date: YYYY-MM-DD, time: HH:mm or HH:mm:ss
+  const t = time ? time : "00:00:00";
+  const timeFixed = t.length === 5 ? `${t}:00` : t;
+  return `${date}T${timeFixed}`;
+};
 
+const isValidEmail = (s) => /\S+@\S+\.\S+/.test(s);
+const isValidPhone = (s) => /^[0-9+()\-\s]{7,20}$/.test(s);
+
+/* -------------------------
+  Component
+------------------------- */
 export default function RecruitmentEventPage() {
   const navigate = useNavigate();
   const { token } = useAuth();
   const [orzInfo, setOrzInfo] = useState({});
-  const [media, setMedia] = useState(null);
+  const [coverFile, setCoverFile] = useState(null);
   const [coverPreview, setCoverPreview] = useState(null);
+  const [mediaFiles, setMediaFiles] = useState([]); // additional media
+  const [mediaPreviews, setMediaPreviews] = useState([]);
+
   const [basicInfo, setBasicInfo] = useState({
     title: "",
     description: "",
     category: "",
     eventType: "NON_PROFIT"
   });
+
   const [timeLocation, setTimeLocation] = useState({
     startDate: "",
     startTime: "",
@@ -36,6 +57,7 @@ export default function RecruitmentEventPage() {
     detailLocation: "",
     onlineLink: ""
   });
+
   const [requirements, setRequirements] = useState({
     volunteersNeeded: 10,
     registrationDeadline: "",
@@ -45,12 +67,14 @@ export default function RecruitmentEventPage() {
     experienceLevel: "NEWBIE",
     detail: ""
   });
+
   const [contactInfo, setContactInfo] = useState({
     coordinatorName: "",
     phone: "",
     email: "",
     alternateContact: ""
   });
+
   const [formExtras, setFormExtras] = useState({
     tags: [],
     benefits: {
@@ -68,8 +92,11 @@ export default function RecruitmentEventPage() {
     },
     autoApprove: false,
     requireBackground: false,
-    priority: "NORMAL"
+    priority: "NORMAL",
+    skills: [],
+    interests: []
   });
+
   const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
 
@@ -104,101 +131,182 @@ export default function RecruitmentEventPage() {
     loadOrgInfo();
   }, [token]);
 
-  // ==================== COVER UPLOAD ====================
+  // ----- Cover select & preview -----
   const handleCoverSelect = (file) => {
     if (!file) {
-      setMedia(null);
       if (coverPreview) {
-        try {
-          URL.revokeObjectURL(coverPreview);
-        } catch (e) {}
-        setCoverPreview(null);
+        try { URL.revokeObjectURL(coverPreview); } catch {}
       }
+      setCoverFile(null);
+      setCoverPreview(null);
+      return;
+    }
+    if (!file.type.startsWith("image/")) {
+      toast.error("Vui lòng chọn ảnh hợp lệ cho ảnh bìa.");
+      return;
+    }
+    if (file.size > 8 * 1024 * 1024) {
+      toast.error("Ảnh bìa không được vượt quá 8MB.");
       return;
     }
     const url = URL.createObjectURL(file);
     if (coverPreview) {
-      try {
-        URL.revokeObjectURL(coverPreview);
-      } catch (e) {}
+      try { URL.revokeObjectURL(coverPreview); } catch {}
     }
-    setMedia(file);
+    setCoverFile(file);
     setCoverPreview(url);
   };
 
-  const uploadCover = async () => {
-    if (!media) return null;
-    try {
-      const form = new FormData();
-      form.append("file", media);
-      const res = await axios.post(`${API_BASE}/api/upload`, form, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "multipart/form-data"
-        }
-      });
-      return res?.data?.url || res?.data?.result?.url || null;
-    } catch (e) {
-      console.error("Upload cover failed", e);
-      toast.error("Tải ảnh bìa thất bại.");
-      return null;
-    }
+  // ----- Media select (multiple) -----
+  const handleAddMediaFiles = (files) => {
+    if (!files || !files.length) return;
+    const newFiles = Array.from(files).slice(0, 10); // limit 10
+    const valid = [];
+    const previews = [];
+    newFiles.forEach((f) => {
+      if (!f.type.startsWith("image/") && !f.type.startsWith("video/")) {
+        toast.warn(`${f.name} - không phải ảnh/video, bỏ qua.`);
+        return;
+      }
+      if (f.size > 50 * 1024 * 1024) {
+        toast.warn(`${f.name} - vượt quá 50MB, bỏ qua.`);
+        return;
+      }
+      valid.push(f);
+      try { previews.push({ url: URL.createObjectURL(f), type: f.type.startsWith("video/") ? "video" : "image", name: f.name }); } catch {}
+    });
+    setMediaFiles((prev) => [...prev, ...valid]);
+    setMediaPreviews((prev) => [...prev, ...previews]);
   };
 
-  const buildPayload = async () => {
-    const coverUrl = await uploadCover();
+  const removeMediaAt = (idx) => {
+    setMediaFiles((prev) => prev.filter((_, i) => i !== idx));
+    setMediaPreviews((prev) => {
+      try { URL.revokeObjectURL(prev[idx]?.url); } catch {}
+      return prev.filter((_, i) => i !== idx);
+    });
+  };
 
-    const startDateTime = formatDateTimeISO(timeLocation.startDate, timeLocation.startTime);
-    const endDateTime = formatDateTimeISO(timeLocation.endDate, timeLocation.endTime);
-    const registrationDeadline = requirements.registrationDeadline
-      ? `${requirements.registrationDeadline}T23:59:59`
-      : null;
+  // ----- Basic handlers -----
+  const handleBasicInfo = (key, value) => setBasicInfo(prev => ({ ...prev, [key]: value }));
+  const handleTimeLocation = (key, value) => setTimeLocation(prev => ({ ...prev, [key]: value }));
+  const handleRequirements = (key, value) => setRequirements(prev => ({ ...prev, [key]: value }));
+  const handleContact = (key, value) => setContactInfo(prev => ({ ...prev, [key]: value }));
 
-    return {
+  // ----- tags & skills & interests -----
+  const handleTagAdd = (tag) => setFormExtras(prev => ({ ...prev, tags: [...prev.tags, tag] }));
+  const handleTagRemove = (tag) => setFormExtras(prev => ({ ...prev, tags: prev.tags.filter(t => t !== tag) }));
+  const handleSkillAdd = (skill) => setFormExtras(prev => ({ ...prev, skills: [...prev.skills, skill] }));
+  const handleSkillRemove = (skill) => setFormExtras(prev => ({ ...prev, skills: prev.skills.filter(s => s !== skill) }));
+  const handleInterestAdd = (i) => setFormExtras(prev => ({ ...prev, interests: [...prev.interests, i] }));
+  const handleInterestRemove = (i) => setFormExtras(prev => ({ ...prev, interests: prev.interests.filter(x => x !== i) }));
+
+  // ----- benefits handlers -----
+  const handleBenefitToggle = (key, checked) => {
+    setFormExtras(prev => ({ ...prev, benefits: { ...prev.benefits, [key]: checked } }));
+  };
+  const handleBenefitAmount = (value) => {
+    const num = Number(value) || 0;
+    setFormExtras(prev => ({ ...prev, benefits: { ...prev.benefits, allowanceAmount: num } }));
+  };
+
+  // ----- validation -----
+  const validate = () => {
+    const e = {};
+    if (!basicInfo.title || !basicInfo.title.trim()) e.title = "Tên sự kiện không được bỏ trống.";
+    if (!basicInfo.description || basicInfo.description.trim().length < 10) e.description = "Mô tả tối thiểu 10 ký tự.";
+    if (basicInfo.description && basicInfo.description.length > 1000) e.description = "Mô tả quá dài (tối đa 1000 ký tự).";
+    if (!basicInfo.category) e.category = "Chọn danh mục.";
+    if (!timeLocation.startDate) e.startDate = "Chọn ngày bắt đầu.";
+    if (!requirements.volunteersNeeded || Number(requirements.volunteersNeeded) < 1) e.volunteersNeeded = "Nhập số lượng TNV hợp lệ.";
+    if (!contactInfo.coordinatorName) e.coordinatorName = "Nhập tên điều phối viên.";
+    if (!contactInfo.phone || !isValidPhone(contactInfo.phone)) e.phone = "Số điện thoại không hợp lệ.";
+    if (!contactInfo.email || !isValidEmail(contactInfo.email)) e.email = "Email không hợp lệ.";
+    if (!timeLocation.isOnline && !timeLocation.location) e.location = "Nhập địa điểm tổ chức.";
+    if (timeLocation.isOnline && timeLocation.onlineLink && !/^https?:\/\//.test(timeLocation.onlineLink)) e.onlineLink = "Link online phải có http(s)://";
+    // start/end order
+    if (timeLocation.startDate && timeLocation.endDate) {
+      const s = new Date(formatDateTimeISO(timeLocation.startDate, timeLocation.startTime) || timeLocation.startDate);
+      const en = new Date(formatDateTimeISO(timeLocation.endDate, timeLocation.endTime) || timeLocation.endDate);
+      if (s > en) e.endDate = "Ngày kết thúc phải sau ngày bắt đầu.";
+    }
+    setErrors(e);
+    return Object.keys(e).length === 0;
+  };
+
+  // Build FormData: event JSON in 'event' RequestPart + coverImage + listEventMedia
+  const buildFormData = () => {
+    const startAt = formatDateTimeISO(timeLocation.startDate, timeLocation.startTime);
+    const endAt = formatDateTimeISO(timeLocation.endDate, timeLocation.endTime);
+    const registrationDeadline = requirements.registrationDeadline ? `${requirements.registrationDeadline}T23:59:59` : null;
+
+    const eventObj = {
       title: basicInfo.title,
       description: basicInfo.description,
       category: basicInfo.category,
       eventType: basicInfo.eventType,
-      startDateTime,
-      endDateTime,
+      startAt,
+      endAt,
       isOnline: !!timeLocation.isOnline,
       location: timeLocation.location || null,
       address: timeLocation.detailLocation || null,
       onlineLink: timeLocation.onlineLink || null,
-      volunteersNeeded: requirements.volunteersNeeded,
+      volunteersNeeded: Number(requirements.volunteersNeeded) || 0,
       registrationDeadline,
-      minAge: requirements.minAge,
-      maxAge: requirements.maxAge,
-      genderRequirement: requirements.genderRequirement,
-      experienceLevel: requirements.experienceLevel,
-      requirementsDetail: requirements.detail,
-      coordinatorName: contactInfo.coordinatorName,
-      phone: contactInfo.phone,
-      email: contactInfo.email,
+      minAge: requirements.minAge || null,
+      maxAge: requirements.maxAge || null,
+      genderRequirement: requirements.genderRequirement || null,
+      experienceLevel: requirements.experienceLevel || null,
+      requirementsDetail: requirements.detail || null,
+      coordinatorName: contactInfo.coordinatorName || null,
+      phone: contactInfo.phone || null,
+      email: contactInfo.email || null,
       alternateContact: contactInfo.alternateContact || null,
-      tags: formExtras.tags,
-      benefits: formExtras.benefits,
-      autoApprove: formExtras.autoApprove,
-      requireBackground: formExtras.requireBackground,
-      priority: formExtras.priority,
-      coverUrl
+      tags: formExtras.tags || [],
+      skills: formExtras.skills || [],
+      interests: formExtras.interests || [],
+      benefits: formExtras.benefits || {},
+      autoApprove: !!formExtras.autoApprove,
+      requireBackground: !!formExtras.requireBackground,
+      priority: formExtras.priority || "NORMAL",
+      isDraft: false
     };
+
+    const fd = new FormData();
+    fd.append("event", JSON.stringify(eventObj)); // RequestPart("event")
+
+    if (coverFile) fd.append("coverImage", coverFile);
+
+    if (mediaFiles && mediaFiles.length) {
+      mediaFiles.forEach((f) => fd.append("listEventMedia", f));
+    }
+
+    return fd;
   };
 
+  // Submit
   const handleSubmit = async (action = "send") => {
     if (!validate()) {
       toast.error("Vui lòng sửa các lỗi trên form trước khi gửi.");
       return;
     }
-
     try {
       setIsLoading(true);
-      const payload = await buildPayload();
 
-      payload.status = action === "save" ? "DRAFT" : "PENDING_APPROVAL";
+      const formData = buildFormData();
+      // set status by appending small info inside event object or append separate part
+      // append small metadata as part: e.g. eventStatus -> we'll include inside JSON via isDraft flag
+      // modify isDraft based on action:
+      const isDraft = action === "save";
+      // We need to update the event json inside formData -> easiest rebuild with isDraft flag:
+      const payloadObj = JSON.parse(formData.get("event"));
+      payloadObj.isDraft = isDraft;
+      formData.set("event", JSON.stringify(payloadObj));
 
-      const res = await axios.post(`${API_BASE}/api/organizer/events/create`, payload, {
-        headers: { Authorization: `Bearer ${token}` }
+      const res = await axios.post(`${import.meta.env.VITE_API}/api/organizer/events/create`, formData, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       });
 
       if (res?.data?.code === 0 || (res.status >= 200 && res.status < 300)) {
@@ -214,13 +322,20 @@ export default function RecruitmentEventPage() {
       }
     } catch (e) {
       console.error("Submit fail", e);
-      toast.error("Lỗi khi gửi sự kiện. Vui lòng thử lại.");
+      // try to read backend error code
+      const msg = e?.response?.data?.message || "Lỗi khi gửi sự kiện. Vui lòng thử lại.";
+      toast.error(msg);
     } finally {
       setIsLoading(false);
     }
   };
 
-  // ==================== RENDER ====================
+  // derived: preview count
+  const mediaCount = useMemo(() => mediaFiles.length, [mediaFiles]);
+
+  /* -------------------------
+     Render
+  ------------------------- */
   return (
     <div className="min-h-screen bg-gray-50 p-6 mb-18">
       <div className="max-w-7xl mx-auto">
@@ -271,6 +386,50 @@ export default function RecruitmentEventPage() {
                     </label>
                   </div>
                 )}
+                <div className="mt-3 text-sm text-gray-500">Định dạng: JPG/PNG. Kích thước tối ưu: 1200x600</div>
+
+                {/* Media upload (images/videos) */}
+                <div className="mt-4 border-t pt-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Ảnh/Video bổ sung</label>
+                  <div className="flex items-center gap-3">
+                    <input
+                      id="mediaInput"
+                      type="file"
+                      accept="image/*,video/*"
+                      multiple
+                      onChange={(e) => handleAddMediaFiles(e.target.files)}
+                      className="hidden"
+                    />
+                    <label
+                      htmlFor="mediaInput"
+                      className="inline-flex items-center gap-2 px-3 py-2 bg-white border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50"
+                    >
+                      <Plus className="w-4 h-4" /> Thêm
+                    </label>
+                    <div className="text-sm text-gray-500">{mediaCount} file đã chọn (tối đa 10)</div>
+                  </div>
+
+                  {mediaPreviews.length > 0 && (
+                    <div className="mt-3 grid grid-cols-3 gap-3">
+                      {mediaPreviews.map((p, idx) => (
+                        <div key={idx} className="relative rounded overflow-hidden border">
+                          {p.type === "video" ? (
+                            <video src={p.url} className="w-full h-24 object-cover" controls />
+                          ) : (
+                            <img src={p.url} alt={p.name} className="w-full h-24 object-cover" />
+                          )}
+                          <button
+                            onClick={() => removeMediaAt(idx)}
+                            className="absolute top-1 right-1 bg-red-500 p-1 rounded-full text-white"
+                            title="Xóa"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
 
@@ -790,9 +949,7 @@ export default function RecruitmentEventPage() {
                 <button
                   onClick={() => handleSubmit("send")}
                   disabled={isLoading}
-                  className={`w-full flex items-center justify-center px-4 py-3 ${
-                    isLoading ? "bg-blue-400" : "bg-blue-600 hover:bg-blue-700"
-                  } text-white rounded-lg transition font-medium`}
+                  className={`w-full flex items-center justify-center px-4 py-3 ${isLoading ? "bg-blue-400" : "bg-blue-600 hover:bg-blue-700"} text-white rounded-lg transition font-medium`}
                 >
                   {isLoading ? (
                     <div className="h-5 w-5 mr-2 animate-spin rounded-full border-2 border-white border-t-transparent" />
@@ -804,9 +961,7 @@ export default function RecruitmentEventPage() {
                 <button
                   onClick={() => handleSubmit("save")}
                   disabled={isLoading}
-                  className={`w-full flex items-center justify-center px-4 py-3 text-white rounded-lg ${
-                    isLoading ? "bg-gray-500" : "bg-gray-600 hover:bg-gray-700"
-                  } transition font-medium`}
+                  className={`w-full flex items-center justify-center px-4 py-3 text-white rounded-lg ${isLoading ? "bg-gray-500" : "bg-gray-600 hover:bg-gray-700"} transition font-medium`}
                 >
                   <Save className="w-4 h-4 mr-2" />
                   Lưu nháp

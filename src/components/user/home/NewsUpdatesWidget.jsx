@@ -10,7 +10,8 @@ const NewsUpdatesWidget = () => {
   useEffect(() => {
     const loaded = async () => {
       try {
-        const res = await axios.get(`${import.meta.env.VITE_API}/api/`);  // lấy tin tức nổi bật (max 5 tin)
+        const res = await axios.get(`${import.meta.env.VITE_API}/api/volunteer/events/trending`); 
+        console.log(res);
       } catch (error) {
         console.log(error);
         toast.error("Có lỗi xảy ra trong quá trình lấy dữ liệu!");

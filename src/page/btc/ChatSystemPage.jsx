@@ -83,7 +83,7 @@ export default function ChatMobile({ initialChats = null, initialMessagesByChat 
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <header className="bg-white shadow-sm sticky top-14 left-0 right-0 z-20">
+      <header className="bg-white shadow-sm sticky top-14 right-0 z-20">
         <div className=" mx-auto flex items-center justify-between px-4 py-3">
           <div className="flex items-center gap-3">
             <button onClick={() => setShowList(s => !s)} className="p-2 bg-gray-100 rounded-lg">
@@ -105,10 +105,10 @@ export default function ChatMobile({ initialChats = null, initialMessagesByChat 
         </div>
       </header>
 
-      <main className="max-w-md mx-auto px-4 pb-28">
+      <main className=" mx-auto px-4 pb-28">
         {/* Chat list drawer */}
         {showList && (
-          <div className="fixed top-14 inset-0 z-30">
+          <div className="fixed top-14 md:left-64 inset-0 z-30">
             <div className="absolute inset-0 bg-black/40" onClick={() => setShowList(false)} />
             <div className="absolute left-0 top-0 bottom-0 w-full max-w-md bg-white shadow-lg overflow-y-auto">
               <div className="p-4 border-b">
@@ -176,7 +176,7 @@ export default function ChatMobile({ initialChats = null, initialMessagesByChat 
       </main>
 
       {/* Input Bar fixed bottom */}
-      <div className="fixed left-0 right-0 bottom-18 md:bottom-0 bg-white border-t py-3 px-4 max-w-md mx-auto">
+      <div className="fixed left-60 right-0 bottom-18 md:bottom-0 bg-white border-t py-3 px-4 mx-auto">
         <div className="flex items-end gap-2">
           <div className="flex items-center gap-1">
             <button onClick={() => fileRef.current?.click()} className="p-2 bg-gray-100 rounded-lg">

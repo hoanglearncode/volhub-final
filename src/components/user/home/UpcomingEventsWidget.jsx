@@ -8,7 +8,7 @@ const UpcomingEventsWidget = () => {
   useEffect(() => {
     const loaded = async () => {
       try {
-        const event = await axios.get(`${import.meta.env.VITE_API}/api/volunteer/events`); // các sự kiện diễn ra trong
+        const event = await axios.get(`${import.meta.env.VITE_API}/api/volunteer/events/coming-month`); // các sự kiện diễn ra trong
         // 1 tháng tới - sắp xếp theo thời gian - lấy sự kiện gần với ngày hôm nay nhât
         if (event.data.code === 0){
           setMockUpcomingEvents(event.data?.result);

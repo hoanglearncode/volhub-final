@@ -102,7 +102,7 @@ export default function RecruiterSupportMobile({
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white mb-18">
       {/* Header */}
       <header className="sticky top-0 z-30 bg-white/95 backdrop-blur border-b border-gray-100">
-        <div className="max-w-md mx-auto px-4 py-3 flex items-center justify-between">
+        <div className="mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="bg-blue-600 p-2 rounded-lg text-white">
               <HelpCircle className="w-5 h-5" />
@@ -119,7 +119,7 @@ export default function RecruiterSupportMobile({
         </div>
 
         {/* Search */}
-        <div className="max-w-md mx-auto px-4 pb-3">
+        <div className="mx-auto px-4 pb-3">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
             <input
@@ -132,7 +132,7 @@ export default function RecruiterSupportMobile({
         </div>
       </header>
 
-      <main className="max-w-md mx-auto px-4 py-4 space-y-4">
+      <main className="mx-auto px-4 py-4 space-y-4">
         {/* Horizontal navigation (touch-friendly) */}
         <nav className="flex flex-wrap gap-2 overflow-x-auto pb-2">
           {navigationItems.map((nav) => {
@@ -227,7 +227,6 @@ export default function RecruiterSupportMobile({
           <div className="text-xs text-gray-500">Hoặc gọi hotline: <span className="font-medium text-gray-900">{hotline}</span></div>
         </section>
       </main>
-
     </div>
   );
 }

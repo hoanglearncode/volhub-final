@@ -19,32 +19,26 @@ export default function LoginPage() {
     const endpoint = `${import.meta.env.VITE_API}/oauth2/authorization/${provider}`;
 
     try {
-      // Thử gọi để lấy redirect URL nếu backend trả JSON hoặc Location header.
-      // Note: một số backend trả 302 trực tiếp (thì axios có thể follow). 
-      // Thử đọc các chỗ có thể chứa URL và fallback sang window.location.
       const res = await axios.get(endpoint, { validateStatus: () => true, maxRedirects: 0 })
         .catch(err => err.response || null);
 
-      // 1) Nếu backend trả Location header (redirect)
       const locationHeader = res?.headers?.location;
-      // 2) Nếu backend trả JSON { url: "..."} hay {redirectUrl: "..."}
       const bodyUrl = res?.data?.url || res?.data?.redirectUrl || res?.data?.redirect_uri;
-      // 3) axios.response.request.responseURL (nếu follow redirect)
       const responseURL = res?.request?.responseURL;
 
+      // uu tiên ủl redirect mà backend trả về 
       const redirectUrl = locationHeader || bodyUrl || responseURL;
 
       if (redirectUrl) {
-        // điều hướng trình duyệt tới URL của provider (hoặc URL backend trả)
-        window.location.href = '/';
+        // Điều hướng sang trang xác thực Google/Facebook
+        window.location.href = redirectUrl;
       } else {
-        // fallback: chuyển trực tiếp tới endpoint (backend sẽ 302 tới provider)
+        // fallback — backend sẽ 302 trực tiếp
         window.location.href = endpoint;
       }
     } catch (error) {
       console.error("OAuth login error:", error);
-      // fallback an toàn
-      window.location.href = endpoint;
+      window.location.href = endpoint; // fallback
     } finally {
       setIsLoading(false);
     }
@@ -52,7 +46,6 @@ export default function LoginPage() {
 
   const loginWithGoogle = () => loginWithProvider("google");
   const loginWithFacebook = () => loginWithProvider("facebook");
-
   const handleSubmit = async () => {
     setIsLoading(true);
     try {

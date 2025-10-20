@@ -44,7 +44,7 @@ const VolunteerRecruitmentService = () => {
       name: "VOLHUB ECO PLUS TRIAL",
       price: "2.112.000", 
       currency: "VNĐ",
-      description: "Trải nghiệm tuyển dụng tiết kiệm với vị trí hiện thị trong Dễ xuất việc làm liên quan kết hợp cùng các dịch vụ khác, giá đúng thú hấp dẫn.",
+      description: "Trải nghiệm tuyển dụng tiết kiệm với vị trí hiển thị trong Đề xuất việc làm liên quan kết hợp cùng các dịch vụ khác, giá đúng thú hấp dẫn.",
       color: "from-purple-500 to-purple-600",
       features: [
         "Đăng tin 15 bài/tháng",

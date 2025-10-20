@@ -8,7 +8,7 @@ import PublicLayout from "../components/layout/PublicLayout";
 import ProtectedRoute from "../components/routing/ProtectedRoute";
 import VerifyRouter from "../components/routing/VerifyRouter";
 import VerifyPasswordRouter from "../components/routing/VerifyPasswordRouter";
-
+import AuthCallback from "../components/common/AuthCallback";
 
 import Home from "../page/volunteer/Home";
 import AboutPage from "../page/volunteer/About";
@@ -122,6 +122,10 @@ export const routes = [
                     {
                         path: '/forgot',
                         element: <VerifyPasswordRouter><ForgotPasswordPage /></VerifyPasswordRouter>
+                    },
+                    {
+                        path: '/auth/callback',
+                        element: <AuthCallback />
                     },
                     {
                         path: '/auth/reset',
