@@ -543,7 +543,7 @@ export default function Register() {
               {/* Social Login Buttons */}
               <div className="mt-4 lg:mt-6 grid grid-cols-2 gap-3">
                 <button
-                  onclick={loginWithGoogle}
+                  onclick={()=>loginWithGoogle()}
                   className="w-full inline-flex justify-center py-3 px-4 border border-gray-200 lg:border-gray-300 rounded-xl lg:rounded-lg bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors duration-200"
                 >
                   <svg className="w-4 h-4 lg:w-5 lg:h-5 mr-2" viewBox="0 0 24 24">
@@ -567,7 +567,7 @@ export default function Register() {
                   Google
                 </button>
                 <button
-                  onClick={loginWithFacebook}
+                  onClick={()=> loginWithFacebook()}
                   className="w-full inline-flex justify-center py-3 px-4 border border-gray-200 lg:border-gray-300 rounded-xl lg:rounded-lg bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors duration-200"
                 >
                   <svg
