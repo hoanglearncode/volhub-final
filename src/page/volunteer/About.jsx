@@ -23,14 +23,15 @@ import {
   Sparkles,
   Zap,
 } from "lucide-react";
+import { Link } from "react-router-dom";
+import { toast, ToastContainer } from "react-toastify";
 
-// ==================== DATA LAYER (Mock API) ====================
 const mockAPI = {
   getStats: () =>
     Promise.resolve([
-      { number: "75,000+", label: "Tình nguyện viên", icon: "Users", color: "from-blue-500 to-cyan-500" },
-      { number: "3,500+", label: "Dự án hoàn thành", icon: "Award", color: "from-purple-500 to-pink-500" },
-      { number: "250+", label: "Tổ chức đối tác", icon: "Handshake", color: "from-orange-500 to-red-500" },
+      { number: "12,000+", label: "Tình nguyện viên", icon: "Users", color: "from-blue-500 to-cyan-500" },
+      { number: "850+", label: "Dự án hoàn thành", icon: "Award", color: "from-purple-500 to-pink-500" },
+      { number: "120+", label: "Tổ chức đối tác", icon: "Handshake", color: "from-orange-500 to-red-500" },
       { number: "63+", label: "Tỉnh thành", icon: "Globe", color: "from-green-500 to-emerald-500" },
     ]),
 
@@ -241,7 +242,6 @@ const TimelineItem = ({ item, index }) => {
 
 // ==================== MAIN COMPONENT ====================
 const AboutPage = () => {
-  const [activeTab, setActiveTab] = useState("mission");
   const [isVisible, setIsVisible] = useState(false);
   const [currentTestimonial, setCurrentTestimonial] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -345,6 +345,7 @@ const AboutPage = () => {
       await new Promise((res) => setTimeout(res, 900));
       // In real app: await api.sendContact(contactForm)
       setSubmitSuccess(true);
+      toast.success("Cảm ơn bạn đã liên hệ! Chúng tôi sẽ phản hồi sớm nhất có thể.");
       setContactForm({ name: "", email: "", phone: "", subject: "", message: "" });
     } catch (err) {
       console.error("Send contact error:", err);
@@ -354,197 +355,6 @@ const AboutPage = () => {
       // hide success after a while
       setTimeout(() => setSubmitSuccess(false), 6000);
     }
-  };
-
-  const tabContent = {
-    mission: {
-      title: "Sứ mệnh & Tầm nhìn",
-      icon: Target,
-      content: (
-        <div className="space-y-6">
-          <div className="bg-gradient-to-br from-blue-50 via-white to-cyan-50 p-8 rounded-3xl border border-blue-100 shadow-lg">
-            <h3 className="text-2xl font-bold text-gray-900 mb-4 flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center text-white shadow-lg">
-                <Target size={20} />
-              </div>
-              Sứ mệnh của chúng tôi
-            </h3>
-            <p className="text-lg text-gray-700 leading-relaxed">
-              Chúng tôi tin rằng mỗi con người đều có tiềm năng tạo ra những thay đổi tích cực cho thế giới. Sứ mệnh của
-              VolHub là xây dựng cầu nối giữa những trái tim nhân ái và những cơ hội tình nguyện ý nghĩa — tạo nên hệ sinh
-              thái tình nguyện bền vững và hiệu quả.
-            </p>
-          </div>
-
-          <div className="bg-white p-8 rounded-3xl border border-gray-100 shadow-lg">
-            <h3 className="text-2xl font-bold text-gray-900 mb-4 flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white shadow-lg">
-                <Globe size={20} />
-              </div>
-              Tầm nhìn 2030
-            </h3>
-            <p className="text-lg text-gray-700 leading-relaxed mb-6">
-              Trở thành nền tảng tình nguyện hàng đầu Đông Nam Á, kết nối 1 triệu tình nguyện viên và tạo ra 1 tỷ giờ tình
-              nguyện, góp phần xây dựng một xã hội nhân văn và phát triển bền vững.
-            </p>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="bg-gradient-to-br from-blue-50 to-white p-6 rounded-2xl border border-blue-100">
-                <h4 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
-                  <CheckCircle className="text-blue-500" size={20} />
-                  Mục tiêu 2025
-                </h4>
-                <ul className="space-y-3 text-gray-700">
-                  <li className="flex items-start gap-2">
-                    <Sparkles size={16} className="text-blue-500 mt-1 flex-shrink-0" />
-                    <span>200,000 tình nguyện viên tích cực</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <Sparkles size={16} className="text-blue-500 mt-1 flex-shrink-0" />
-                    <span>10,000 dự án cộng đồng</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <Sparkles size={16} className="text-blue-500 mt-1 flex-shrink-0" />
-                    <span>500 tổ chức đối tác</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <Sparkles size={16} className="text-blue-500 mt-1 flex-shrink-0" />
-                    <span>Mở rộng ra các nước ASEAN</span>
-                  </li>
-                </ul>
-              </div>
-
-              <div className="bg-gradient-to-br from-purple-50 to-white p-6 rounded-2xl border border-purple-100">
-                <h4 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
-                  <TrendingUp className="text-purple-500" size={20} />
-                  Tác động dự kiến
-                </h4>
-                <ul className="space-y-3 text-gray-700">
-                  <li className="flex items-start gap-2">
-                    <Zap size={16} className="text-purple-500 mt-1 flex-shrink-0" />
-                    <span>50 triệu người được hỗ trợ</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <Zap size={16} className="text-purple-500 mt-1 flex-shrink-0" />
-                    <span>100 triệu giờ tình nguyện</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <Zap size={16} className="text-purple-500 mt-1 flex-shrink-0" />
-                    <span>1000 tỷ VNĐ giá trị xã hội</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <Zap size={16} className="text-purple-500 mt-1 flex-shrink-0" />
-                    <span>Giảm 30% bất bình đẳng xã hội</span>
-                  </li>
-                </ul>
-              </div>
-            </div>
-          </div>
-        </div>
-      ),
-    },
-    story: {
-      title: "Hành trình phát triển",
-      icon: Lightbulb,
-      content: (
-        <div className="space-y-8">
-          <div className="text-center mb-8">
-            <h3 className="text-3xl font-bold text-gray-900 mb-4">Từ ý tưởng đến hiện thực</h3>
-            <p className="text-lg text-gray-600 max-w-3xl mx-auto leading-relaxed">
-              Được truyền cảm hứng từ niềm đam mê, khát khao được cống hiến của người trẻ Việt Nam, đội ngũ VolHub hiện
-              thực hóa một cộng đồng nơi mọi người có thể tìm kiếm và chia sẻ hoạt động tình nguyện.
-            </p>
-          </div>
-
-          <div className="relative">
-            <div className="absolute top-0 bottom-0 left-3 w-1 bg-gradient-to-b from-blue-500 via-cyan-500 to-blue-600 rounded-full" />
-            <div className="space-y-8">{timeline.map((item, index) => <TimelineItem key={index} item={item} index={index} />)}</div>
-          </div>
-        </div>
-      ),
-    },
-    team: {
-      title: "Đội ngũ lãnh đạo",
-      icon: Users,
-      content: (
-        <div className="space-y-8">
-          <div className="text-center mb-8">
-            <h3 className="text-3xl font-bold text-gray-900 mb-4">Những người kiến tạo</h3>
-            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-              Đội ngũ lãnh đạo giàu kinh nghiệm với tầm nhìn chung về một thế giới tốt đẹp hơn
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 gap-6">
-            {team.map((member, index) => (
-              <div
-                key={index}
-                className="bg-gradient-to-br from-white to-blue-50 p-8 rounded-3xl shadow-lg border border-blue-100 hover:shadow-2xl transition-all duration-300"
-              >
-                <div className="flex flex-col md:flex-row items-start gap-6">
-                  <div className="text-5xl bg-gradient-to-br from-blue-500 to-cyan-500 text-white w-24 h-24 rounded-2xl flex items-center justify-center shadow-lg">
-                    {member.avatar}
-                  </div>
-                  <div className="flex-1">
-                    <h4 className="text-2xl font-bold text-gray-900 mb-2">{member.name}</h4>
-                    <p className="text-blue-600 font-semibold mb-4 text-lg">{member.role}</p>
-                    <p className="text-gray-700 mb-4 leading-relaxed">{member.description}</p>
-                    <div className="bg-gradient-to-r from-yellow-50 to-orange-50 p-4 rounded-xl border-l-4 border-yellow-500">
-                      <p className="text-gray-900 font-semibold flex items-center gap-2">
-                        <Trophy size={18} className="text-yellow-600" />
-                        {member.achievements}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      ),
-    },
-    impact: {
-      title: "Tác động & Thành tựu",
-      icon: Award,
-      content: (
-        <div className="space-y-8">
-          <div className="text-center mb-8">
-            <h3 className="text-3xl font-bold text-gray-900 mb-4">Những thành tựu đáng tự hào</h3>
-            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-              VolHub tự hào đã mang đến những giá trị cộng đồng được ghi nhận bởi các tổ chức, doanh nghiệp uy tín trong và
-              ngoài nước.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {achievements.map((achievement, index) => (
-              <AchievementBadge key={index} achievement={achievement} index={index} />
-            ))}
-          </div>
-
-          <div className="bg-gradient-to-br from-blue-50 via-white to-purple-50 p-8 rounded-3xl border border-blue-100 shadow-lg">
-            <h4 className="text-2xl font-bold text-gray-900 mb-6 text-center flex items-center justify-center gap-3">
-              <Star className="text-yellow-500" size={28} />
-              Lời cảm ơn từ cộng đồng
-            </h4>
-            {testimonials.length > 0 && <TestimonialCard testimonial={testimonials[currentTestimonial]} />}
-
-            <div className="flex justify-center mt-6 space-x-3">
-              {testimonials.map((_, index) => (
-                <button
-                  key={index}
-                  onClick={() => setCurrentTestimonial(index)}
-                  aria-label={`Đọc đánh giá ${index + 1}`}
-                  className={`w-3 h-3 rounded-full transition-all duration-300 ${
-                    index === currentTestimonial ? "bg-blue-500 w-8" : "bg-gray-300 hover:bg-gray-400"
-                  }`}
-                />
-              ))}
-            </div>
-          </div>
-        </div>
-      ),
-    },
   };
 
   if (loading) {
@@ -594,10 +404,10 @@ const AboutPage = () => {
             </p>
 
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-              <button className="group inline-flex items-center gap-2 px-8 py-4 rounded-2xl bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 text-white font-bold shadow-2xl hover:shadow-pink-500/50 transition-all duration-300 hover:scale-105">
+              <Link to="/register" className="group inline-flex items-center gap-2 px-8 py-4 rounded-2xl bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 text-white font-bold shadow-2xl hover:shadow-pink-500/50 transition-all duration-300 hover:scale-105">
                 <Heart size={20} className="group-hover:animate-pulse" />
                 Đăng ký liền tay - Lan tỏa điều hay
-              </button>
+              </Link>
             </div>
           </div>
         </div>
@@ -646,66 +456,6 @@ const AboutPage = () => {
         </div>
       </section>
 
-      {/* Detailed Content Section */}
-      <section className="py-16 lg:py-24 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col lg:flex-row gap-8">
-            {/* Sidebar Navigation */}
-            <aside className="lg:w-80 flex-shrink-0">
-              <div className="sticky top-6 bg-gradient-to-br from-blue-50 to-white rounded-3xl p-6 border border-blue-100 shadow-lg">
-                <h3 className="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center text-white">
-                    <Sparkles size={16} />
-                  </div>
-                  Khám phá thêm
-                </h3>
-                <nav className="space-y-3">
-                  {Object.entries(tabContent).map(([key, tab]) => {
-                    const IconComponent = tab.icon;
-                    return (
-                      <button
-                        key={key}
-                        onClick={() => setActiveTab(key)}
-                        className={`w-full text-left px-5 py-4 rounded-2xl flex items-center gap-4 transition-all duration-300 ${
-                          activeTab === key
-                            ? "bg-gradient-to-r from-blue-500 to-cyan-500 text-white shadow-lg shadow-blue-500/30"
-                            : "text-gray-700 hover:bg-white hover:shadow-md"
-                        }`}
-                      >
-                        <IconComponent size={20} />
-                        <span className="font-semibold flex-1">{tab.title}</span>
-                        <ArrowRight
-                          size={18}
-                          className={`transition-transform ${activeTab === key ? "translate-x-1" : ""}`}
-                        />
-                      </button>
-                    );
-                  })}
-                </nav>
-
-                <div className="mt-6 pt-6 border-t border-blue-100">
-                  <button className="w-full px-6 py-4 rounded-2xl bg-gradient-to-r from-pink-500 to-rose-500 text-white font-bold hover:from-pink-600 hover:to-rose-600 transition-all duration-300 shadow-lg hover:shadow-pink-500/50 hover:scale-105">
-                    Đăng ký ngay
-                  </button>
-                </div>
-              </div>
-            </aside>
-
-            {/* Main Content */}
-            <div className="flex-1">
-              <div className="bg-white rounded-3xl p-6 lg:p-8 border border-gray-100 shadow-lg">
-                <h2 className="text-3xl font-bold text-gray-900 mb-8 flex items-center gap-4">
-                  <div className="w-1.5 h-10 rounded-full bg-gradient-to-b from-blue-500 to-cyan-500" />
-                  {tabContent[activeTab].title}
-                </h2>
-
-                <div className="transition-all duration-500">{tabContent[activeTab].content}</div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
       {/* CTA Section */}
       <section className="py-16 lg:py-24 bg-gradient-to-br from-blue-600 via-cyan-600 to-purple-600 text-white relative overflow-hidden">
         <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSAxMCAwIEwgMCAwIDAgMTAiIGZpbGw9Im5vbmUiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS1vcGFjaXR5PSIwLjEiIHN0cm9rZS13aWR0aD0iMSIvPjwvcGF0dGVybj48L2RlZnM+PHJlY3Qgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgZmlsbD0idXJsKCNncmlkKSIvPjwvc3ZnPg==')] opacity-20" />
@@ -717,10 +467,10 @@ const AboutPage = () => {
             cực, ý nghĩa cho xã hội.
           </p>
 
-          <button className="inline-flex items-center gap-3 px-10 py-5 rounded-2xl bg-white text-blue-600 font-bold shadow-2xl hover:shadow-white/50 transition-all duration-300 hover:scale-105">
+          <Link to='/register' className="inline-flex items-center gap-3 px-10 py-5 rounded-2xl bg-white text-blue-600 font-bold shadow-2xl hover:shadow-white/50 transition-all duration-300 hover:scale-105">
             <Heart size={24} />
             Đăng ký tình nguyện viên
-          </button>
+          </Link>
 
           <div className="mt-16 grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
             {[
@@ -767,19 +517,13 @@ const AboutPage = () => {
                   {
                     icon: MapPin,
                     title: "Địa chỉ",
-                    content: "Tầng 12, Tòa nhà ABC, 123 Nguyễn Trãi, Quận Thanh Xuân, Hà Nội",
+                    content: "301 nguyễn trãi, phường Khương Đình, Hà Nội",
                     gradient: "from-blue-500 to-cyan-500",
-                  },
-                  {
-                    icon: Phone,
-                    title: "Điện thoại",
-                    content: "Hotline: 0901 234 567 | Hỗ trợ: 0907 654 321",
-                    gradient: "from-green-500 to-emerald-500",
                   },
                   {
                     icon: Mail,
                     title: "Email",
-                    content: "hello@volhub.vn | support@volhub.vn",
+                    content: "volhub.hou@gmail.com | tuyentnvcacsukien@gmail.com",
                     gradient: "from-purple-500 to-pink-500",
                   },
                   {
@@ -806,16 +550,12 @@ const AboutPage = () => {
               <div className="mt-8 pt-8 border-t border-blue-100">
                 <h4 className="font-bold text-gray-900 mb-4">Theo dõi chúng tôi</h4>
                 <div className="flex gap-3">
-                  {["bg-blue-600 hover:bg-blue-700", "bg-pink-500 hover:bg-pink-600", "bg-cyan-500 hover:bg-cyan-600"].map(
-                    (color, i) => (
-                      <button
-                        key={i}
-                        className={`w-12 h-12 rounded-xl ${color} text-white flex items-center justify-center transition-all duration-300 hover:scale-110 shadow-lg`}
-                      >
-                        <span className="text-lg font-bold">{["f", "📷", "in"][i]}</span>
-                      </button>
-                    )
-                  )}
+                  <Link 
+                      to="https://www.facebook.com/profile.php?id=61552728892066"
+                      className={`w-12 h-12 bg-blue-600 hover:bg-blue-700 rounded-xl text-white flex items-center justify-center transition-all duration-300 hover:scale-110 shadow-lg`}
+                    >
+                      <span className="text-lg font-bold">f</span>
+                  </Link>
                 </div>
               </div>
             </div>
@@ -907,6 +647,7 @@ const AboutPage = () => {
                 <div className="flex items-center gap-4">
                   <button
                     type="submit"
+                    onClick={()=> {handleContact()}}
                     disabled={submitting}
                     className={`inline-flex items-center gap-2 px-6 py-3 rounded-2xl bg-gradient-to-r from-blue-600 to-cyan-600 text-white font-semibold shadow-lg hover:scale-105 transition-all duration-200 ${
                       submitting ? "opacity-70 cursor-wait" : ""
@@ -932,6 +673,7 @@ const AboutPage = () => {
           </div>
         </div>
       </section>
+      <ToastContainer />
     </div>
   );
 };

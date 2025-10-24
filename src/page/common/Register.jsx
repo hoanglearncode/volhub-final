@@ -162,7 +162,7 @@ export default function Register() {
         role: filterStatus
       };
 
-      const response = await axios.post(`${import.meta.env.VITE_API}/api/users/create`, requestData);
+      const response = await axios.post(`${import.meta.env.VITE_API}/api/auth/users/create`, requestData);
       if (response?.data?.result) {
         try {
           const res = await axios.post(`${import.meta.env.VITE_API}/auth/token`, {

@@ -1,10 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { Calendar, Users, Heart, ArrowRight, MapPin, Clock, Search, TrendingUp, Award, MessageCircle } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext'; 
+
 export default function Home() {
   const { token } = useAuth();
+  const navigate = useNavigate();
   const [scrollY, setScrollY] = useState(0);
+  const [communities, setCommunities] = useState([]);
+  const [featuredEvents, setFeaturedEvents] = useState([]);
+  const [searchValue, setSearchValue] = useState("");
 
   useEffect(() => {
     const handleScroll = () => setScrollY(window.scrollY);
@@ -12,38 +17,126 @@ export default function Home() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  const featuredEvents = [
+  // --- Dữ liệu mẫu (6 sự kiện, 6 bài cộng đồng) ---
+  const sampleFeaturedEvents = [
     {
       id: 1,
-      title: "Chiến dịch trồng cây xanh Hà Nội",
-      image: "https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=800&q=80",
-      location: "Hồ Tây, Hà Nội",
-      date: "25/10/2025",
-      volunteers: 45,
-      slotsLeft: 15,
-      category: "Môi trường"
+      title: "Aquafina Vietnam International Fashion Week 2025",
+      slug: "aquafina-vietnam-international-fashion-week-2025",
+      category: "Môi trường",
+      image: "https://res.cloudinary.com/dqjrrgi4i/image/upload/v1761318555/z7109028936008_a65537e87f2bfcff7f1e3f77c600c9c1_z936mc.jpg",
+      slotsLeft: 0,
+      location: "Hà Nội",
+      date: "12/11/2025, 08:00",
+      volunteers: 56,
     },
     {
       id: 2,
-      title: "Hỗ trợ trẻ em vùng cao học tập",
-      image: "https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?w=800&q=80",
-      location: "Sơn La",
-      date: "28/10/2025",
-      volunteers: 32,
-      slotsLeft: 8,
-      category: "Giáo dục"
+      title: "Hạnh phúc học sinh thủ đô - Hà Nội",
+      slug: "ho-tro-hoc-bong-tre-em",
+      category: "Giáo dục",
+      image: "https://res.cloudinary.com/dqjrrgi4i/image/upload/v1761318554/z7109028928483_8ba16d5034671c86bab6cc6929c020cb_bouzqn.jpg",
+      slotsLeft: 0,
+      location: "Hà Nội",
+      date: "20/8/2025, 09:00",
+      volunteers: 34,
     },
     {
       id: 3,
-      title: "Chăm sóc người cao tuổi neo đơn",
-      image: "https://images.unsplash.com/photo-1559027615-cd4628902d4a?w=800&q=80",
-      location: "Quận Đống Đa, Hà Nội",
-      date: "30/10/2025",
-      volunteers: 28,
-      slotsLeft: 12,
-      category: "Cộng đồng"
-    }
+      title: "Khám sức khỏe cộng đồng miễn phí",
+      slug: "kham-suc-khoe-cong-dong",
+      category: "Y tế",
+      image: "https://res.cloudinary.com/dqjrrgi4i/image/upload/v1761318555/z7109029100703_1ac168147245feb522a03566b7d07eae_pwuqe5.jpg",
+      slotsLeft: 0,
+      location: "Hà Nội",
+      date: "05/12/2025, 07:30",
+      volunteers: 18,
+    },
+    {
+      id: 4,
+      title: "Trồng cây xanh ven đường",
+      slug: "trong-cay-xanh-ven-duong",
+      category: "Môi trường",
+      image: "https://res.cloudinary.com/dqjrrgi4i/image/upload/v1761318554/z7109079974801_9d0021971c329740695512d0123f969c_l9qatk.jpg",
+      slotsLeft: 8,
+      location: "Đường Nguyễn Trãi, Hà Nội",
+      date: "28/11/2025, 08:00",
+      volunteers: 72,
+    },
+    {
+      id: 5,
+      title: "Hướng nghiệp cho sinh viên năm nhất",
+      slug: "huong-nghiep-sinh-vien",
+      category: "Giáo dục",
+      image: "https://res.cloudinary.com/dqjrrgi4i/image/upload/v1761318554/z7109028918873_8df1c77d7acda23cb7e2aeda0f17dbfe_ejtfnr.jpg",
+      slotsLeft: 30,
+      location: "Hội trường A, Đại học X",
+      date: "15/11/2025, 13:30",
+      volunteers: 45,
+    },
+    {
+      id: 6,
+      title: "Gian hàng 0 đồng cho người khó khăn",
+      slug: "gian-hang-0-dong",
+      category: "An sinh",
+      image: "https://res.cloudinary.com/dqjrrgi4i/image/upload/v1761318554/z7109028913787_f1421e0eedc5c42b23441ff91b03c5e6_fha3jv.jpg",
+      slotsLeft: 20,
+      location: "Công viên trung tâm, Cần Thơ",
+      date: "02/12/2025, 09:00",
+      volunteers: 29,
+    },
   ];
+
+  const sampleCommunities = [
+    {
+      slug: "hanh-trinh-cua-minh-khi-lam-tinh-nguyen",
+      image: "https://res.cloudinary.com/dqjrrgi4i/image/upload/v1761318549/z7109110921139_effab7eac081da9e902324a6a3c82f5a_m5gtqe.jpg",
+      title: "Hành trình của mình khi làm tình nguyện ở miền núi",
+      author: "Lan Nguyễn",
+      comments: 12,
+    },
+    {
+      slug: "chia-se-kinh-nghiem-to-chuc-su-kien",
+      image: "https://res.cloudinary.com/dqjrrgi4i/image/upload/v1761318549/z7109086172895_b1c94141809c0b5184e888a1c145db95_lqudg2.jpg",
+      title: "Chia sẻ kinh nghiệm tổ chức sự kiện thiện nguyện nhỏ",
+      author: "Minh Trần",
+      comments: 8,
+    },
+    {
+      slug: "nhung-khoanh-khac-khong-the-quen",
+      image: "https://res.cloudinary.com/dqjrrgi4i/image/upload/v1761318549/z7109080260322_32ac4071981d2bfdd527deee7236578b_nx3k51.jpg",
+      title: "Những khoảnh khắc không thể quên khi đi trao quà",
+      author: "Huyền Phạm",
+      comments: 21,
+    },
+    {
+      slug: "loi-khuyen-cho-tinh-nguyen-vien-moi",
+      image: "https://res.cloudinary.com/dqjrrgi4i/image/upload/v1761318549/z7109155569192_f66e3af8802e7886cb71df0519df037c_bsahh9.jpg",
+      title: "Lời khuyên cho tình nguyện viên mới: chuẩn bị gì trước khi đi?",
+      author: "Quốc Bảo",
+      comments: 5,
+    },
+    {
+      slug: "ket-noi-cung-nhung-nguoi-ban-moi",
+      image: "https://res.cloudinary.com/dqjrrgi4i/image/upload/v1761318549/z7109086625073_1fe2d64159a2b7382f0782c37596551e_ebnzgy.jpg",
+      title: "Kết nối cùng những người bạn mới qua dự án cộng đồng",
+      author: "Thanh Hà",
+      comments: 9,
+    },
+    {
+      slug: "lam-the-nao-de-quan-ly-thoi-gian-hieu-qua",
+      image: "https://res.cloudinary.com/dqjrrgi4i/image/upload/v1761318550/z7109682571210_fd02d80da162557732917e776d28f54b_fanfhv.jpg",
+      title: "Làm thế nào để quản lý thời gian khi tham gia nhiều dự án?",
+      author: "Hoàng Việt",
+      comments: 3,
+    },
+  ];
+
+  // Gán dữ liệu mẫu vào state khi component mount
+  useEffect(() => {
+    setFeaturedEvents(sampleFeaturedEvents);
+    setCommunities(sampleCommunities);
+  }, []);
 
   const stats = [
     { icon: Users, label: "Tình nguyện viên", value: "12,500+", color: "bg-blue-500" },
@@ -52,43 +145,18 @@ export default function Home() {
     { icon: Award, label: "Đối tác", value: "120+", color: "bg-purple-500" }
   ];
 
-  const communities = [
-    {
-      title: "Làm thế nào để bắt đầu với hoạt động tình nguyện?",
-      author: "Nguyễn Văn A",
-      comments: 24,
-      image: "https://images.unsplash.com/photo-1469571486292-0ba58a3f068b?w=400&q=80"
-    },
-    {
-      title: "Chia sẻ kinh nghiệm từ chiến dịch trồng rừng",
-      author: "Trần Thị B",
-      comments: 18,
-      image: "https://images.unsplash.com/photo-1542273917363-3b1817f69a2d?w=400&q=80"
-    },
-    {
-      title: "Kỹ năng cần thiết cho tình nguyện viên",
-      author: "Lê Văn C",
-      comments: 31,
-      image: "https://images.unsplash.com/photo-1559027615-cd4628902d4a?w=400&q=80"
-    }
-  ];
-
-  const data = {
-    stats: {
-      totalVolunteer: 0,
-      weEvent: 0,
-      houseActive: 0,
-      totalPanner: 0,
-    },
-    event : [
-      // 6 sự kiện từ `${import.meta.env.VITE_API}/api/volunteer/events`, 
-    ],
-    communities: [
-      // 6 bài viết từ api bài viết 
-    ]
+  const handleSearch = () => {
+    navigate(`/events?q=${encodeURIComponent(searchValue)}`);
   }
 
-  const handleRegister = (id) => {}
+  const handleRegister = async (id) => {
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API}/api/events/${id}/register`);
+      // bạn có thể xử lý response ở đây nếu cần
+    } catch (error) {
+      console.error("Đăng ký thất bại", error);
+    }
+  }
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white">
       {/* Hero Section */}
@@ -122,7 +190,7 @@ export default function Home() {
             </p>
             
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-8">
-              <Link to='/' className="group bg-white text-blue-600 px-8 py-4 rounded-xl font-semibold text-lg shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-300 flex items-center gap-2">
+              <Link to='/events' className="group bg-white text-blue-600 px-8 py-4 rounded-xl font-semibold text-lg shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-300 flex items-center gap-2">
                 Tham gia ngay
                 <ArrowRight className="group-hover:translate-x-1 transition-transform" size={20} />
               </Link>
@@ -138,11 +206,12 @@ export default function Home() {
                   <Search className="text-gray-400" size={20} />
                   <input 
                     type="text" 
+                    value={searchValue}
                     placeholder="Tìm kiếm sự kiện tình nguyện..." 
                     className="flex-1 outline-none text-gray-700"
                   />
                 </div>
-                <button className="bg-blue-600 text-white px-6 py-3 rounded-xl font-semibold hover:bg-blue-700 transition-colors">
+                <button onClick={()=> handleSearch()} className="bg-blue-600 text-white px-6 py-3 rounded-xl font-semibold hover:bg-blue-700 transition-colors">
                   Tìm kiếm
                 </button>
               </div>
@@ -334,13 +403,13 @@ export default function Home() {
                 <p className="text-xl mb-8 text-blue-100">
                   Tham gia cộng đồng tình nguyện viên hôm nay và bắt đầu hành trình ý nghĩa của bạn.
                 </p>
-                <button className="bg-white text-blue-600 px-8 py-4 rounded-xl font-bold text-lg hover:bg-blue-50 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105">
+                <Link to={'/login'} className="bg-white text-blue-600 px-8 py-4 rounded-xl font-bold text-lg hover:bg-blue-50 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105">
                   Đăng ký tài khoản miễn phí
-                </button>
+                </Link>
               </div>
               <div className="flex-1 relative h-80 md:h-96">
                 <img 
-                  src="https://images.unsplash.com/photo-1559027615-cd4628902d4a?w=800&q=80"
+                  src="https://res.cloudinary.com/dqjrrgi4i/image/upload/v1761315054/z7109682772711_88ef39166e4c0259c896e8ae02714fd2_zlgn1k.jpg"
                   alt="Join volunteers"
                   className="w-full h-full object-cover"
                 />

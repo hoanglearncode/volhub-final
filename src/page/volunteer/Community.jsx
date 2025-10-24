@@ -18,7 +18,6 @@ import {
 } from 'lucide-react';
 import UpcomingEventsWidget from '../../components/user/home/UpcomingEventsWidget';
 
-// Mock Data
 const mockData = {
   featured: [
     {
