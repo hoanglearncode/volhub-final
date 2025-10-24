@@ -4,24 +4,133 @@ import { Link } from "react-router-dom";
 import axios from "axios";
 import { toast } from "react-toastify";
 
+const sampleBlogPosts = [
+  {
+    id: 101,
+    slug: "hanh-trinh-cua-minh-khi-lam-tinh-nguyen",
+    image:
+      "https://res.cloudinary.com/dqjrrgi4i/image/upload/v1761318549/z7109110921139_effab7eac081da9e902324a6a3c82f5a_m5gtqe.jpg",
+    title: "Hành trình của mình khi làm tình nguyện ở miền núi",
+    author: "Lan Nguyễn",
+    comments: 12,
+    excerpt:
+      "Chia sẻ trải nghiệm, khó khăn và niềm vui khi tham gia hoạt động thiện nguyện tại vùng cao.",
+    date: "2025-09-20T10:00:00",
+    readTime: "6 phút",
+    views: 1200,
+    likes: 95,
+    category: "Môi trường",
+    featured: true
+  },
+  {
+    id: 102,
+    slug: "chia-se-kinh-nghiem-to-chuc-su-kien",
+    image:
+      "https://res.cloudinary.com/dqjrrgi4i/image/upload/v1761318549/z7109086172895_b1c94141809c0b5184e888a1c145db95_lqudg2.jpg",
+    title: "Chia sẻ kinh nghiệm tổ chức sự kiện thiện nguyện nhỏ",
+    author: "Minh Trần",
+    comments: 8,
+    excerpt:
+      "Checklist, mẹo vận hành và cách kêu gọi tài trợ cho sự kiện cộng đồng quy mô nhỏ.",
+    date: "2025-10-03T14:30:00",
+    readTime: "5 phút",
+    views: 890,
+    likes: 47,
+    category: "Hoạt động",
+    featured: true
+  },
+  {
+    id: 103,
+    slug: "nhung-khoanh-khac-khong-the-quen",
+    image:
+      "https://res.cloudinary.com/dqjrrgi4i/image/upload/v1761318549/z7109080260322_32ac4071981d2bfdd527deee7236578b_nx3k51.jpg",
+    title: "Những khoảnh khắc không thể quên khi đi trao quà",
+    author: "Huyền Phạm",
+    comments: 21,
+    excerpt:
+      "Kỷ niệm đẹp khi mang niềm vui đến những gia đình khó khăn, những bài học cảm động.",
+    date: "2025-07-18T08:00:00",
+    readTime: "4 phút",
+    views: 2350,
+    likes: 210,
+    category: "An sinh",
+    featured: false
+  },
+  {
+    id: 104,
+    slug: "loi-khuyen-cho-tinh-nguyen-vien-moi",
+    image:
+      "https://res.cloudinary.com/dqjrrgi4i/image/upload/v1761318549/z7109155569192_f66e3af8802e7886cb71df0519df037c_bsahh9.jpg",
+    title: "Lời khuyên cho tình nguyện viên mới: chuẩn bị gì trước khi đi?",
+    author: "Quốc Bảo",
+    comments: 5,
+    excerpt:
+      "Danh sách cần chuẩn bị, cách giao tiếp với cộng đồng địa phương và bảo vệ sức khoẻ khi đi dài ngày.",
+    date: "2025-06-01T09:30:00",
+    readTime: "3 phút",
+    views: 410,
+    likes: 28,
+    category: "Hướng dẫn",
+    featured: false
+  },
+  {
+    id: 105,
+    slug: "ket-noi-cung-nhung-nguoi-ban-moi",
+    image:
+      "https://res.cloudinary.com/dqjrrgi4i/image/upload/v1761318549/z7109086625073_1fe2d64159a2b7382f0782c37596551e_ebnzgy.jpg",
+    title: "Kết nối cùng những người bạn mới qua dự án cộng đồng",
+    author: "Thanh Hà",
+    comments: 9,
+    excerpt:
+      "Cách tạo mối quan hệ bền vững với đồng đội và tình nguyện viên sau dự án kết thúc.",
+    date: "2025-10-11T18:00:00",
+    readTime: "4 phút",
+    views: 760,
+    likes: 64,
+    category: "Kết nối",
+    featured: false
+  },
+  {
+    id: 106,
+    slug: "lam-the-nao-de-quan-ly-thoi-gian-hieu-qua",
+    image:
+      "https://res.cloudinary.com/dqjrrgi4i/image/upload/v1761318550/z7109682571210_fd02d80da162557732917e776d28f54b_fanfhv.jpg",
+    title: "Làm thế nào để quản lý thời gian khi tham gia nhiều dự án?",
+    author: "Hoàng Việt",
+    comments: 3,
+    excerpt:
+      "Kỹ thuật Pomodoro, ưu tiên công việc và cách giữ sự cân bằng giữa học/tập và tình nguyện.",
+    date: "2025-05-21T07:45:00",
+    readTime: "5 phút",
+    views: 320,
+    likes: 24,
+    category: "Kỹ năng",
+    featured: false
+  }
+];
+
 const NewsUpdatesWidget = () => {
   const [mockNewsUpdates, setMockNewsUpdates] = useState([]);
 
   useEffect(() => {
     const loaded = async () => {
       try {
-        const res = await axios.get(`${import.meta.env.VITE_API}/api/volunteer/events/trending`); 
-        console.log(res);
+        const res = await axios.get(`${import.meta.env.VITE_API}/api/volunteer/posts/top5`); 
+        if(res.data.code === 0 && res.data.result.length > 0) {
+          setMockNewsUpdates(res.data.result);
+        } else {
+          setMockNewsUpdates(sampleBlogPosts);
+        }
       } catch (error) {
         console.log(error);
-        toast.error("Có lỗi xảy ra trong quá trình lấy dữ liệu!");
+        setMockNewsUpdates(sampleBlogPosts);
       }
     }
     loaded();
   }, []);
 
   return (
-    <div className="bg-gradient-to-br flex flex-col from-purple-50 to-blue-50 min-h-80 max-h-90 rounded-2xl shadow-lg p-6 border border-purple-100">
+    <div className="bg-gradient-to-br flex flex-col from-purple-50 to-blue-50 min-h-80 rounded-2xl shadow-lg p-6 border border-purple-100">
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
           <Bell className="w-5 h-5 text-purple-500" />

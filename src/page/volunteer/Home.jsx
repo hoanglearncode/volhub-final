@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Calendar, Users, Heart, ArrowRight, MapPin, Clock, Search, TrendingUp, Award, MessageCircle } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext'; 
+import axios from 'axios';
 
 export default function Home() {
   const { token } = useAuth();
@@ -132,10 +133,37 @@ export default function Home() {
     },
   ];
 
-  // Gán dữ liệu mẫu vào state khi component mount
+  
   useEffect(() => {
-    setFeaturedEvents(sampleFeaturedEvents);
-    setCommunities(sampleCommunities);
+    (async () => {
+      try {
+        const data = await axios.get(`${import.meta.env.VITE_API}/api/volunteer/events/trending`, { params: { size: 6 } });
+        console.log("Featured Events Data:", data);
+        if(data.data.code === 0 && data.data.result.length > 0) {
+          setFeaturedEvents(data.data.result || sampleFeaturedEvents);
+        } else {
+          setFeaturedEvents(sampleFeaturedEvents);
+        }
+      } catch (error) {
+        console.error("Lỗi khi tải dữ liệu trang chủ", error);
+        setFeaturedEvents(sampleFeaturedEvents);
+      }
+    })();
+    (async () => {
+      setCommunities(sampleCommunities);
+      // try {
+      //   const data = await axios.get(`${import.meta.env.VITE_API}/api/volunteer/events/trending`, { params: { size: 6 } });
+      //   console.log("Featured Events Data:", data);
+      //   if(data.data.code === 0 && data.data.result.length > 0) {
+      //     setFeaturedEvents(data.data.result || sampleFeaturedEvents);
+      //   } else {
+      //     setFeaturedEvents(sampleFeaturedEvents);
+      //   }
+      // } catch (error) {
+      //   console.error("Lỗi khi tải dữ liệu trang chủ", error);
+      //   setFeaturedEvents(sampleFeaturedEvents);
+      // }
+    })();
   }, []);
 
   const stats = [

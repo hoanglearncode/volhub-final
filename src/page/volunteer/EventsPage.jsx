@@ -3,14 +3,14 @@ import axios from "axios";
 import { Grid, List, Loader2, ChevronLeft, ChevronRight } from "lucide-react";
 import { toast } from "react-toastify";
 
-import EventSummaryCard from '../../components/common/UserEventCard';
+import EventSummaryCard from "../../components/common/UserEventCard"; // Nếu bạn lưu file khác đường dẫn thì sửa lại
 import NewsUpdatesWidget from "../../components/user/home/NewsUpdatesWidget";
 import UpcomingEventsWidget from "../../components/user/home/UpcomingEventsWidget";
 import BlogPostsWidget from "../../components/user/home/BlogPostsWidget";
 import FAQsWidget from "../../components/user/home/FAQsWidget";
 import FilterPanel from "../../components/common/FilterPanel";
 
-
+// ----------------------- Pagination (tái sử dụng) -----------------------
 const Pagination = ({ totalPages, currentPage, onPageChange }) => {
   if (totalPages <= 1) return null;
 
@@ -24,7 +24,7 @@ const Pagination = ({ totalPages, currentPage, onPageChange }) => {
       }
     } else {
       pages.push(1);
-      
+
       let start = Math.max(2, currentPage - 1);
       let end = Math.min(totalPages - 1, currentPage + 1);
 
@@ -35,7 +35,7 @@ const Pagination = ({ totalPages, currentPage, onPageChange }) => {
       }
 
       if (start > 2) {
-        pages.push('...');
+        pages.push("...");
       }
 
       for (let i = start; i <= end; i++) {
@@ -43,7 +43,7 @@ const Pagination = ({ totalPages, currentPage, onPageChange }) => {
       }
 
       if (end < totalPages - 1) {
-        pages.push('...');
+        pages.push("...");
       }
 
       pages.push(totalPages);
@@ -57,8 +57,8 @@ const Pagination = ({ totalPages, currentPage, onPageChange }) => {
       <button
         className={`p-2 rounded-lg border-2 transition-all ${
           currentPage === 1
-            ? 'text-gray-400 border-gray-200 cursor-not-allowed'
-            : 'text-gray-700 border-gray-300 hover:bg-gray-50 hover:border-gray-400'
+            ? "text-gray-400 border-gray-200 cursor-not-allowed"
+            : "text-gray-700 border-gray-300 hover:bg-gray-50 hover:border-gray-400"
         }`}
         disabled={currentPage === 1}
         onClick={() => onPageChange(currentPage - 1)}
@@ -67,18 +67,18 @@ const Pagination = ({ totalPages, currentPage, onPageChange }) => {
         <ChevronLeft className="w-5 h-5" />
       </button>
 
-      {getPageNumbers().map((page, index) => (
-        typeof page === 'number' ? (
+      {getPageNumbers().map((page, index) =>
+        typeof page === "number" ? (
           <button
             key={`page-${page}`}
             onClick={() => onPageChange(page)}
             className={`min-w-[40px] h-10 px-3 rounded-lg border-2 font-medium transition-all ${
               currentPage === page
-                ? 'bg-blue-600 text-white border-blue-600 shadow-md'
-                : 'text-gray-700 border-gray-300 hover:bg-gray-50 hover:border-gray-400'
+                ? "bg-blue-600 text-white border-blue-600 shadow-md"
+                : "text-gray-700 border-gray-300 hover:bg-gray-50 hover:border-gray-400"
             }`}
             aria-label={`Trang ${page}`}
-            aria-current={currentPage === page ? 'page' : undefined}
+            aria-current={currentPage === page ? "page" : undefined}
           >
             {page}
           </button>
@@ -87,13 +87,13 @@ const Pagination = ({ totalPages, currentPage, onPageChange }) => {
             {page}
           </span>
         )
-      ))}
+      )}
 
       <button
         className={`p-2 rounded-lg border-2 transition-all ${
           currentPage === totalPages
-            ? 'text-gray-400 border-gray-200 cursor-not-allowed'
-            : 'text-gray-700 border-gray-300 hover:bg-gray-50 hover:border-gray-400'
+            ? "text-gray-400 border-gray-200 cursor-not-allowed"
+            : "text-gray-700 border-gray-300 hover:bg-gray-50 hover:border-gray-400"
         }`}
         disabled={currentPage === totalPages}
         onClick={() => onPageChange(currentPage + 1)}
@@ -105,67 +105,146 @@ const Pagination = ({ totalPages, currentPage, onPageChange }) => {
   );
 };
 
+// ----------------------- Dữ liệu mẫu fallback -----------------------
+const sampleFeaturedEvents = [
+  {
+    id: 1,
+    title: "Aquafina Vietnam International Fashion Week 2025",
+    slug: "aquafina-vietnam-international-fashion-week-2025",
+    category: "Môi trường",
+    image:
+      "https://res.cloudinary.com/dqjrrgi4i/image/upload/v1761318555/z7109028936008_a65537e87f2bfcff7f1e3f77c600c9c1_z936mc.jpg",
+    slotsLeft: 0,
+    location: "Hà Nội",
+    date: "2025-11-12T08:00:00",
+    volunteers: 56,
+  },
+  {
+    id: 2,
+    title: "Hạnh phúc học sinh thủ đô - Hà Nội",
+    slug: "ho-tro-hoc-bong-tre-em",
+    category: "Giáo dục",
+    image:
+      "https://res.cloudinary.com/dqjrrgi4i/image/upload/v1761318554/z7109028928483_8ba16d5034671c86bab6cc6929c020cb_bouzqn.jpg",
+    slotsLeft: 0,
+    location: "Hà Nội",
+    date: "2025-08-20T09:00:00",
+    volunteers: 34,
+  },
+  {
+    id: 3,
+    title: "Khám sức khỏe cộng đồng miễn phí",
+    slug: "kham-suc-khoe-cong-dong",
+    category: "Y tế",
+    image:
+      "https://res.cloudinary.com/dqjrrgi4i/image/upload/v1761318555/z7109029100703_1ac168147245feb522a03566b7d07eae_pwuqe5.jpg",
+    slotsLeft: 0,
+    location: "Hà Nội",
+    date: "2025-12-05T07:30:00",
+    volunteers: 18,
+  },
+  {
+    id: 4,
+    title: "Trồng cây xanh ven đường",
+    slug: "trong-cay-xanh-ven-duong",
+    category: "Môi trường",
+    image:
+      "https://res.cloudinary.com/dqjrrgi4i/image/upload/v1761318554/z7109079974801_9d0021971c329740695512d0123f969c_l9qatk.jpg",
+    slotsLeft: 8,
+    location: "Đường Nguyễn Trãi, Hà Nội",
+    date: "2025-11-28T08:00:00",
+    volunteers: 72,
+  },
+  {
+    id: 5,
+    title: "Hướng nghiệp cho sinh viên năm nhất",
+    slug: "huong-nghiep-sinh-vien",
+    category: "Giáo dục",
+    image:
+      "https://res.cloudinary.com/dqjrrgi4i/image/upload/v1761318554/z7109028918873_8df1c77d7acda23cb7e2aeda0f17dbfe_ejtfnr.jpg",
+    slotsLeft: 30,
+    location: "Hội trường A, Đại học X",
+    date: "2025-11-15T13:30:00",
+    volunteers: 45,
+  },
+  {
+    id: 6,
+    title: "Gian hàng 0 đồng cho người khó khăn",
+    slug: "gian-hang-0-dong",
+    category: "An sinh",
+    image:
+      "https://res.cloudinary.com/dqjrrgi4i/image/upload/v1761318554/z7109028913787_f1421e0eedc5c42b23441ff91b03c5e6_fha3jv.jpg",
+    slotsLeft: 20,
+    location: "Công viên trung tâm, Cần Thơ",
+    date: "2025-12-02T09:00:00",
+    volunteers: 29,
+  },
+];
+
 export default function EventsPage() {
   const [events, setEvents] = useState([]);
-  const [filteredEvents, setFilteredEvents] = useState([]); 
+  const [filteredEvents, setFilteredEvents] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [viewMode, setViewMode] = useState('list'); 
+  const [viewMode, setViewMode] = useState("list");
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(0);
   const [totalElements, setTotalElements] = useState(0);
 
-  // Fetch events from API
+  const itemsPerPage = 10;
+
   useEffect(() => {
-    const fetchEvents = async () => {
+    (async () => {
       setLoading(true);
       try {
-        const response = await axios.get(
-          `${import.meta.env.VITE_API}/api/volunteer/events`, 
-          { params: { page: currentPage - 1 } }
-        ); 
-        
-        if (response.data.code === 0) {
-          const result = response.data.result;
-          setEvents(result.content || []);
-          setFilteredEvents(result.content || []);
-          setTotalPages(result.totalPages || 0);
-          setTotalElements(result.totalElements || 0);
-        } else {
-          toast.error("Không thể tải dữ liệu sự kiện.");
-          setEvents([]);
-          setFilteredEvents([]);
+        if (import.meta.env.VITE_API) {
+          const res = await axios.get(`${import.meta.env.VITE_API}/api/volunteer/events`, {
+            params: { size: itemsPerPage, page: currentPage - 1 },
+          });
+          if ( res?.data?.code === 0 && res.data.result.length > 0) {
+            const data = res.data.result;
+            setEvents(data);
+            setFilteredEvents(data);
+            setTotalElements(res.data.totalElements ?? data.length);
+            setTotalPages(Math.max(1, Math.ceil((res.data.totalElements ?? data.length) / itemsPerPage)));
+            setLoading(false);
+          } else {
+            setEvents(sampleFeaturedEvents);
+            setFilteredEvents(sampleFeaturedEvents);
+            setTotalElements(sampleFeaturedEvents.length);
+            setTotalPages(Math.max(1, Math.ceil(sampleFeaturedEvents.length / itemsPerPage)));
+          }
         }
-      } catch (error) {
-        console.error("Error fetching events:", error);
-        toast.error("Đã xảy ra lỗi khi tải sự kiện.");
-        setEvents([]);
-        setFilteredEvents([]);
+      } catch (err) {
+        console.error("Lỗi khi tải dữ liệu sự kiện:", err);
+        setEvents(sampleFeaturedEvents);
+        setFilteredEvents(sampleFeaturedEvents);
+        setTotalElements(sampleFeaturedEvents.length);
+        setTotalPages(Math.max(1, Math.ceil(sampleFeaturedEvents.length / itemsPerPage)));
       } finally {
         setLoading(false);
       }
-    };
-
-    fetchEvents();
+    })();
   }, [currentPage]);
 
   // Handle page change
   const handlePageChange = (newPage) => {
     if (newPage >= 1 && newPage <= totalPages) {
       setCurrentPage(newPage);
-      // Scroll to top when page changes
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      window.scrollTo({ top: 0, behavior: "smooth" });
     }
   };
 
-  // Handle filter apply
+  // Handle filter apply from FilterPanel
   const handleFilterApply = (filtered) => {
+    // Filtered is expected to be an array of events (from FilterPanel)
     setFilteredEvents(filtered);
+    setTotalElements(filtered.length);
+    setTotalPages(Math.max(1, Math.ceil(filtered.length / itemsPerPage)));
+    setCurrentPage(1);
   };
 
-  // Handle view mode change
-  const handleViewModeChange = (mode) => {
-    setViewMode(mode);
-  };
+  // Toggle view mode
+  const handleViewModeChange = (mode) => setViewMode(mode);
 
   if (loading) {
     return (
@@ -188,18 +267,14 @@ export default function EventsPage() {
         {/* FILTER PANEL */}
         <FilterPanel events={events} onApply={handleFilterApply} />
 
-        <div className="">
-          {/* Header Section */}
+        <div>
+          {/* Header */}
           <div className="flex items-start justify-between">
             <div>
-              <h1 className="text-2xl font-semibold text-gray-900">
-                Các sự kiện tình nguyện mới
-              </h1>
+              <h1 className="text-2xl font-semibold text-gray-900">Các sự kiện tình nguyện mới</h1>
               <p className="text-sm text-gray-500 mt-1">
                 Khám phá và tham gia các sự kiện tình nguyện gần bạn
-                {totalElements > 0 && (
-                  <span className="ml-1">({totalElements} sự kiện)</span>
-                )}
+                {totalElements > 0 && <span className="ml-1">({totalElements} sự kiện)</span>}
               </p>
             </div>
 
@@ -208,8 +283,8 @@ export default function EventsPage() {
               <button
                 onClick={() => handleViewModeChange("list")}
                 className={`inline-flex items-center px-3 py-1.5 rounded-md text-sm transition-all ${
-                  viewMode === "list" 
-                    ? "bg-blue-600 text-white" 
+                  viewMode === "list"
+                    ? "bg-blue-600 text-white"
                     : "bg-white text-gray-700 border border-gray-200 hover:bg-gray-50"
                 }`}
                 aria-pressed={viewMode === "list"}
@@ -221,8 +296,8 @@ export default function EventsPage() {
               <button
                 onClick={() => handleViewModeChange("grid")}
                 className={`inline-flex items-center px-3 py-1.5 rounded-md text-sm transition-all ${
-                  viewMode === "grid" 
-                    ? "bg-blue-600 text-white" 
+                  viewMode === "grid"
+                    ? "bg-blue-600 text-white"
                     : "bg-white text-gray-700 border border-gray-200 hover:bg-gray-50"
                 }`}
                 aria-pressed={viewMode === "grid"}
@@ -235,16 +310,14 @@ export default function EventsPage() {
 
           {/* Events Display */}
           <div className="mt-6">
-            {filteredEvents?.length === 0 ? (
+            {(!filteredEvents || filteredEvents.length === 0) ? (
               <div className="text-center py-12 bg-white rounded-lg border border-gray-200">
                 <p className="text-gray-500 text-lg">Không tìm thấy sự kiện nào</p>
-                <p className="text-gray-400 text-sm mt-2">
-                  Vui lòng thử điều chỉnh bộ lọc của bạn
-                </p>
+                <p className="text-gray-400 text-sm mt-2">Vui lòng thử điều chỉnh bộ lọc của bạn</p>
               </div>
             ) : viewMode === "list" ? (
               <div className="space-y-4">
-                {filteredEvents?.map((item, idx) => (
+                {filteredEvents.map((item, idx) => (
                   <div key={item.id ?? `event-${idx}`}>
                     <EventSummaryCard event={item} state="list" />
                   </div>
@@ -252,7 +325,7 @@ export default function EventsPage() {
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {filteredEvents?.map((item, idx) => (
+                {filteredEvents.map((item, idx) => (
                   <div key={item.id ?? `event-${idx}`} className="col-span-1">
                     <EventSummaryCard event={item} state="grid" />
                   </div>
@@ -262,12 +335,8 @@ export default function EventsPage() {
           </div>
 
           {/* Pagination */}
-          {filteredEvents?.length > 0 && totalPages > 1 && (
-            <Pagination 
-              totalPages={totalPages}
-              currentPage={currentPage}
-              onPageChange={handlePageChange}
-            />
+          {filteredEvents && filteredEvents.length > 0 && totalPages > 1 && (
+            <Pagination totalPages={totalPages} currentPage={currentPage} onPageChange={handlePageChange} />
           )}
         </div>
       </div>

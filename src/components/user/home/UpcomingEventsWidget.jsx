@@ -2,24 +2,95 @@ import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Calendar, MapPin } from "lucide-react";
 import axios from "axios";
+
+const sampleFeaturedEvents = [
+    {
+      id: 1,
+      title: "Aquafina Vietnam International Fashion Week 2025",
+      slug: "aquafina-vietnam-international-fashion-week-2025",
+      category: "Môi trường",
+      image: "https://res.cloudinary.com/dqjrrgi4i/image/upload/v1761318555/z7109028936008_a65537e87f2bfcff7f1e3f77c600c9c1_z936mc.jpg",
+      slotsLeft: 0,
+      location: "Hà Nội",
+      date: "12/11/2025, 08:00",
+      volunteers: 56,
+    },
+    {
+      id: 2,
+      title: "Hạnh phúc học sinh thủ đô - Hà Nội",
+      slug: "ho-tro-hoc-bong-tre-em",
+      category: "Giáo dục",
+      image: "https://res.cloudinary.com/dqjrrgi4i/image/upload/v1761318554/z7109028928483_8ba16d5034671c86bab6cc6929c020cb_bouzqn.jpg",
+      slotsLeft: 0,
+      location: "Hà Nội",
+      date: "20/8/2025, 09:00",
+      volunteers: 34,
+    },
+    {
+      id: 3,
+      title: "Khám sức khỏe cộng đồng miễn phí",
+      slug: "kham-suc-khoe-cong-dong",
+      category: "Y tế",
+      image: "https://res.cloudinary.com/dqjrrgi4i/image/upload/v1761318555/z7109029100703_1ac168147245feb522a03566b7d07eae_pwuqe5.jpg",
+      slotsLeft: 0,
+      location: "Hà Nội",
+      date: "05/12/2025, 07:30",
+      volunteers: 18,
+    },
+    {
+      id: 4,
+      title: "Trồng cây xanh ven đường",
+      slug: "trong-cay-xanh-ven-duong",
+      category: "Môi trường",
+      image: "https://res.cloudinary.com/dqjrrgi4i/image/upload/v1761318554/z7109079974801_9d0021971c329740695512d0123f969c_l9qatk.jpg",
+      slotsLeft: 8,
+      location: "Đường Nguyễn Trãi, Hà Nội",
+      date: "28/11/2025, 08:00",
+      volunteers: 72,
+    },
+    {
+      id: 5,
+      title: "Hướng nghiệp cho sinh viên năm nhất",
+      slug: "huong-nghiep-sinh-vien",
+      category: "Giáo dục",
+      image: "https://res.cloudinary.com/dqjrrgi4i/image/upload/v1761318554/z7109028918873_8df1c77d7acda23cb7e2aeda0f17dbfe_ejtfnr.jpg",
+      slotsLeft: 30,
+      location: "Hội trường A, Đại học X",
+      date: "15/11/2025, 13:30",
+      volunteers: 45,
+    },
+    {
+      id: 6,
+      title: "Gian hàng 0 đồng cho người khó khăn",
+      slug: "gian-hang-0-dong",
+      category: "An sinh",
+      image: "https://res.cloudinary.com/dqjrrgi4i/image/upload/v1761318554/z7109028913787_f1421e0eedc5c42b23441ff91b03c5e6_fha3jv.jpg",
+      slotsLeft: 20,
+      location: "Công viên trung tâm, Cần Thơ",
+      date: "02/12/2025, 09:00",
+      volunteers: 29,
+    },
+  ];
+
+
 const UpcomingEventsWidget = () => {
   const [mockUpcomingEvents, setMockUpcomingEvents] = useState([]);
 
   useEffect(() => {
-    const loaded = async () => {
+    (async () => {
       try {
-        const event = await axios.get(`${import.meta.env.VITE_API}/api/volunteer/events/coming-month`); // các sự kiện diễn ra trong
-        // 1 tháng tới - sắp xếp theo thời gian - lấy sự kiện gần với ngày hôm nay nhât
-        if (event.data.code === 0){
-          setMockUpcomingEvents(event.data?.result);
+        const data = await axios.get(`${import.meta.env.VITE_API}/api/volunteer/events/coming-month`, { params: { size: 6 } });
+        console.log("Featured Events Data:", data);
+        if(data.data.code === 0 && data.data.result.length > 0) {
+          setMockUpcomingEvents(data.data.result || sampleFeaturedEvents);
+        } else {
+          setMockUpcomingEvents(sampleFeaturedEvents);
         }
       } catch (error) {
-        console.error("Error fetching events:", error);
-        toast.error("Đã xảy ra lỗi khi tải sự kiện.");
+        console.error("Lỗi khi tải dữ liệu trang chủ", error);
+        setMockUpcomingEvents(sampleFeaturedEvents);
       }
-    }
-
-    loaded();
+    })();
   },[]);
   return (
     <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
